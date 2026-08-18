@@ -1,0 +1,51 @@
+<!-- Main purpose: show the currently available website-management entry points. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCEM Admin Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}">
+</head>
+<body>
+    <main class="dashboard-page">
+        <section class="dashboard-header">
+            <h1>Dashboard</h1>
+
+            <p class="dashboard-welcome">
+                Welcome, {{ current_user_name }}
+            </p>
+
+            <p class="dashboard-description">Please choose a section below to manage SCEM website content.</p>
+        </section>
+
+        <section class="dashboard-grid">
+            <a class="dashboard-card" href="{{ url_for('admin.general_info') }}">
+                <h2>Edit General Info</h2>
+                <p>Update the main page title, homepage content, and section headings.</p>
+            </a>
+
+            <a class="dashboard-card" href="{{ url_for('admin.staff') }}">
+                <h2>Manage Staff</h2>
+                <p>Add, edit, delete, and arrange professors or researchers shown on the site.</p>
+            </a>
+
+            <a class="dashboard-card" href="{{ url_for('admin.projects') }}">
+                <h2>Manage Projects</h2>
+                <p>Maintain ongoing and finished research projects, including their details.</p>
+            </a>
+
+            <a class="dashboard-card" href="{{ url_for('admin.passwords') }}">
+                <h2>Set Up</h2>
+                <p>Reset the administrator account to the initial username and password when needed.</p>
+            </a>
+        </section>
+
+        <section class="dashboard-footer">
+            <a class="logout-link" href="{{ url_for('auth.logout') }}">Logout</a>
+        </section>
+    </main>
+</body>
+</html>

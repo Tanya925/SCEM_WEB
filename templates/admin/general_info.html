@@ -1,0 +1,109 @@
+<!-- Main purpose: SCEM admin homepage-content page for editing text and activity images. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit General Info</title>
+
+    <!-- Load the shared admin stylesheet for a consistent backend appearance -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}">
+</head>
+<body>
+    <!-- Main container for the General Info admin page -->
+    <main class="admin-form-page">
+        <!-- Page header section -->
+        <section class="admin-form-header">
+            <h1>Edit General Info</h1>
+            <p>Update the homepage title, descriptions, and activity images shown on the public SCEM site.</p>
+        </section>
+
+        <!-- Show a success message after a successful save -->
+        {% if success_message %}
+            <p class="success-message">{{ success_message }}</p>
+        {% endif %}
+
+        <!-- General Info edit form.
+             Uses POST and submits back to the same /admin/general-info route for updates. -->
+        <form method="POST" class="admin-form-card">
+            <!-- Homepage English title -->
+            <label for="page_title_en">Page Title EN <span class="required-indicator">*</span></label>
+            <input type="text" id="page_title_en" name="page_title_en" value="{{ general_info['page_title_en'] }}" required>
+
+            <!-- Homepage Thai title -->
+            <label for="page_title_th">Page Title TH <span class="required-indicator">*</span></label>
+            <input type="text" id="page_title_th" name="page_title_th" value="{{ general_info['page_title_th'] }}" required>
+
+            <!-- About SCEM content in English -->
+            <label for="about_content_en">About Content EN</label>
+            <textarea id="about_content_en" name="about_content_en" rows="8">{{ general_info['about_content_en'] or '' }}</textarea>
+
+            <!-- About SCEM content in Thai -->
+            <label for="about_content_th">About Content TH</label>
+            <textarea id="about_content_th" name="about_content_th" rows="8">{{ general_info['about_content_th'] or '' }}</textarea>
+
+            <!-- Main homepage content in English -->
+            <label for="content_en">Content EN</label>
+            <textarea id="content_en" name="content_en" rows="14">{{ general_info['content_en'] }}</textarea>
+
+            <!-- Main homepage content in Thai -->
+            <label for="content_th">Content TH</label>
+            <textarea id="content_th" name="content_th" rows="14">{{ general_info['content_th'] }}</textarea>
+
+            <!-- Save-action area -->
+            <div class="admin-form-actions">
+                <input type="hidden" name="form_action" value="save_text">
+                <button type="submit">Save</button>
+                <a class="secondary-link dashboard-link" href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+            </div>
+        </form>
+
+        <section class="staff-admin-list">
+            <h2>Homepage Activity Images</h2>
+            <p class="dashboard-description">Upload a JPG, PNG, GIF, or WEBP image to add it to the homepage activity gallery.</p>
+
+            <form method="POST" class="admin-form-card" enctype="multipart/form-data">
+                <input type="hidden" name="form_action" value="add_activity_image">
+
+                <label for="activity_image_file">Activity Image <span class="required-indicator">*</span></label>
+                <div class="admin-upload-field" data-upload-field>
+                    <input
+                        type="file"
+                        id="activity_image_file"
+                        name="activity_image_file"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,image/*"
+                        required
+                        data-file-preview="image"
+                    >
+                    <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+                </div>
+
+                <div class="admin-form-actions">
+                    <button type="submit">Add Activity Image</button>
+                </div>
+            </form>
+
+            <div class="staff-admin-grid">
+                {% for image in activity_images %}
+                    <article class="staff-admin-card">
+                        <div class="staff-admin-photo">
+                            <img src="{{ url_for('static', filename='uploads/' ~ image['filename']) }}" alt="{{ image['filename'] }}">
+                        </div>
+                        <h3>{{ image['filename'] }}</h3>
+
+                        <form method="POST" class="admin-inline-form">
+                            <input type="hidden" name="form_action" value="delete_activity_image">
+                            <input type="hidden" name="image_id" value="{{ image['id'] }}">
+                            <div class="staff-admin-actions">
+                                <button type="submit" class="link-button">Delete</button>
+                            </div>
+                        </form>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/admin/admin_file_previews.js') }}"></script>
+</body>
+</html>

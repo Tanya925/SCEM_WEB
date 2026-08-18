@@ -1,0 +1,371 @@
+<!-- Main purpose: SCEM admin research-projects page for creating, editing, and deleting project records. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Research Projects</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}">
+</head>
+<body>
+    <!-- Main container for the Projects admin page -->
+    <main class="admin-form-page">
+        <section class="admin-form-header">
+            <h1>Manage Research Projects</h1>
+            <p>Create, edit, and delete research projects with the latest ongoing-project fields in both languages.</p>
+            <p class="admin-form-hint">Required fields must be filled in. Optional fields left empty will stay hidden on the public website.</p>
+        </section>
+
+        {% if success_message %}
+            <p class="success-message">{{ success_message }}</p>
+        {% endif %}
+
+        <!-- Project create/edit form -->
+        <form method="POST" class="admin-form-card" enctype="multipart/form-data">
+            {% if editing_project %}
+                <input type="hidden" name="project_id" value="{{ editing_project['id'] }}">
+            {% endif %}
+            {% set current_project_type = editing_project['project_type'] if editing_project else 'ongoing' %}
+
+            <div class="admin-form-grid">
+                <div>
+                    <label for="project_type">Project Type</label>
+                    <select id="project_type" name="project_type" data-project-type>
+                        <option value="ongoing" {% if not editing_project or editing_project['project_type'] == 'ongoing' %}selected{% endif %}>Ongoing</option>
+                        <option value="finished" {% if editing_project and editing_project['project_type'] == 'finished' %}selected{% endif %}>Finished</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="finished" {% if current_project_type != 'finished' %}hidden{% endif %}>
+                <div>
+                    <label for="year_en">Finished Year EN <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="year_en" name="year_en" value="{{ editing_project['year_en'] if editing_project else '' }}" data-project-required="finished">
+                </div>
+                <div>
+                    <label for="year_th">Finished Year TH <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="year_th" name="year_th" value="{{ editing_project['year_th'] if editing_project else '' }}" data-project-required="finished">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="duration_en">Project Duration EN <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="duration_en" name="duration_en" value="{{ editing_project['duration_en'] if editing_project else '' }}" data-project-required="ongoing">
+                </div>
+                <div>
+                    <label for="duration_th">Project Duration TH <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="duration_th" name="duration_th" value="{{ editing_project['duration_th'] if editing_project else '' }}" data-project-required="ongoing">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two">
+                <div>
+                    <label for="title_en">Project Title EN <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="title_en" name="title_en" value="{{ editing_project['title_en'] if editing_project else '' }}" data-project-required="always">
+                </div>
+                <div>
+                    <label for="title_th">Project Title TH <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="title_th" name="title_th" value="{{ editing_project['title_th'] if editing_project else '' }}" data-project-required="always">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="leader_en">Project Leader EN <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="leader_en" name="leader_en" value="{{ editing_project['leader_en'] if editing_project else '' }}" data-project-required="ongoing">
+                </div>
+                <div>
+                    <label for="leader_th">Project Leader TH <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <input type="text" id="leader_th" name="leader_th" value="{{ editing_project['leader_th'] if editing_project else '' }}" data-project-required="ongoing">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="leader_photo_file">Project Leader Photo</label>
+                    <div class="admin-upload-field" data-upload-field>
+                        {% if editing_project and editing_project['leader_photo_filename'] %}
+                            <div class="admin-upload-preview">
+                                <p class="admin-current-file">Current photo: {{ editing_project['leader_photo_filename'] }}</p>
+                                <div class="admin-upload-preview-media admin-upload-preview-media-image">
+                                    <img src="{{ url_for('static', filename='uploads/' ~ editing_project['leader_photo_filename']) }}" alt="Current leader photo">
+                                </div>
+                            </div>
+                        {% endif %}
+                        <input type="file" id="leader_photo_file" name="leader_photo_file" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" data-file-preview="image">
+                        <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+                    </div>
+                    <p class="admin-form-hint">Optional. Upload only if this person's photo is not already available in the staff list.</p>
+                </div>
+                <div></div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="deputy_en">Deputy Project Leader EN</label>
+                    <input type="text" id="deputy_en" name="deputy_en" value="{{ editing_project['deputy_en'] if editing_project else '' }}">
+                </div>
+                <div>
+                    <label for="deputy_th">Deputy Project Leader TH</label>
+                    <input type="text" id="deputy_th" name="deputy_th" value="{{ editing_project['deputy_th'] if editing_project else '' }}">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="deputy_photo_file">Deputy Project Leader Photo</label>
+                    <div class="admin-upload-field" data-upload-field>
+                        {% if editing_project and editing_project['deputy_photo_filename'] %}
+                            <div class="admin-upload-preview">
+                                <p class="admin-current-file">Current photo: {{ editing_project['deputy_photo_filename'] }}</p>
+                                <div class="admin-upload-preview-media admin-upload-preview-media-image">
+                                    <img src="{{ url_for('static', filename='uploads/' ~ editing_project['deputy_photo_filename']) }}" alt="Current deputy photo">
+                                </div>
+                            </div>
+                        {% endif %}
+                        <input type="file" id="deputy_photo_file" name="deputy_photo_file" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" data-file-preview="image">
+                        <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+                    </div>
+                    <p class="admin-form-hint">Optional. Upload only if this person's photo is not already available in the staff list.</p>
+                </div>
+                <div></div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="coordinator_en">Project Coordinator EN</label>
+                    <input type="text" id="coordinator_en" name="coordinator_en" value="{{ editing_project['coordinator_en'] if editing_project else '' }}">
+                </div>
+                <div>
+                    <label for="coordinator_th">Project Coordinator TH</label>
+                    <input type="text" id="coordinator_th" name="coordinator_th" value="{{ editing_project['coordinator_th'] if editing_project else '' }}">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="coordinator_photo_file">Project Coordinator Photo</label>
+                    <div class="admin-upload-field" data-upload-field>
+                        {% if editing_project and editing_project['coordinator_photo_filename'] %}
+                            <div class="admin-upload-preview">
+                                <p class="admin-current-file">Current photo: {{ editing_project['coordinator_photo_filename'] }}</p>
+                                <div class="admin-upload-preview-media admin-upload-preview-media-image">
+                                    <img src="{{ url_for('static', filename='uploads/' ~ editing_project['coordinator_photo_filename']) }}" alt="Current coordinator photo">
+                                </div>
+                            </div>
+                        {% endif %}
+                        <input type="file" id="coordinator_photo_file" name="coordinator_photo_file" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" data-file-preview="image">
+                        <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+                    </div>
+                    <p class="admin-form-hint">Optional. Upload only if this person's photo is not already available in the staff list.</p>
+                </div>
+                <div></div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="advisor_en">Project Advisor EN</label>
+                    <input type="text" id="advisor_en" name="advisor_en" value="{{ editing_project['advisor_en'] if editing_project else '' }}">
+                </div>
+                <div>
+                    <label for="advisor_th">Project Advisor TH</label>
+                    <input type="text" id="advisor_th" name="advisor_th" value="{{ editing_project['advisor_th'] if editing_project else '' }}">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="advisor_photo_file">Project Advisor Photo</label>
+                    <div class="admin-upload-field" data-upload-field>
+                        {% if editing_project and editing_project['advisor_photo_filename'] %}
+                            <div class="admin-upload-preview">
+                                <p class="admin-current-file">Current photo: {{ editing_project['advisor_photo_filename'] }}</p>
+                                <div class="admin-upload-preview-media admin-upload-preview-media-image">
+                                    <img src="{{ url_for('static', filename='uploads/' ~ editing_project['advisor_photo_filename']) }}" alt="Current advisor photo">
+                                </div>
+                            </div>
+                        {% endif %}
+                        <input type="file" id="advisor_photo_file" name="advisor_photo_file" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" data-file-preview="image">
+                        <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+                    </div>
+                    <p class="admin-form-hint">Optional. Upload only if this person's photo is not already available in the staff list.</p>
+                </div>
+                <div></div>
+            </div>
+
+            <section class="admin-dynamic-section" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div class="admin-dynamic-header">
+                    <div>
+                        <h2>Researchers</h2>
+                        <p>Add researchers one by one. Each person can have EN name, TH name, and an optional photo.</p>
+                        <p class="admin-form-hint">If the person already exists in the staff list, you can leave the photo empty and the website will try to match it automatically.</p>
+                    </div>
+                    <button type="button" class="admin-action-button" data-add-researcher data-collapsed-label="Add Researcher" data-expanded-label="Add Another Researcher">Add Researcher</button>
+                </div>
+                <div class="admin-dynamic-list" data-researcher-list hidden></div>
+            </section>
+
+            <section class="admin-dynamic-section" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div class="admin-dynamic-header">
+                    <div>
+                        <h2>Project Engineers</h2>
+                        <p>Add project engineers one by one. Each person can have EN name, TH name, and an optional photo.</p>
+                        <p class="admin-form-hint">If the person already exists in the staff list, you can leave the photo empty and the website will try to match it automatically.</p>
+                    </div>
+                    <button type="button" class="admin-action-button" data-add-engineer data-collapsed-label="Add Engineer" data-expanded-label="Add Another Engineer">Add Engineer</button>
+                </div>
+                <div class="admin-dynamic-list" data-engineer-list hidden></div>
+            </section>
+
+            <section class="admin-dynamic-section" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div class="admin-dynamic-header">
+                    <div>
+                        <h2>Research Assistants</h2>
+                        <p>Add research assistants one by one. Each person can have EN name, TH name, and an optional photo.</p>
+                        <p class="admin-form-hint">If the person already exists in the staff list, you can leave the photo empty and the website will try to match it automatically.</p>
+                    </div>
+                    <button type="button" class="admin-action-button" data-add-assistant data-collapsed-label="Add Assistant" data-expanded-label="Add Another Assistant">Add Assistant</button>
+                </div>
+                <div class="admin-dynamic-list" data-assistant-list hidden></div>
+            </section>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="lead_unit_en">Lead Unit EN</label>
+                    <input type="text" id="lead_unit_en" name="lead_unit_en" value="{{ editing_project['lead_unit_en'] if editing_project else '' }}">
+                </div>
+                <div>
+                    <label for="lead_unit_th">Lead Unit TH</label>
+                    <input type="text" id="lead_unit_th" name="lead_unit_th" value="{{ editing_project['lead_unit_th'] if editing_project else '' }}">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="partner_en">Partner Organisations EN</label>
+                    <textarea id="partner_en" name="partner_en" rows="5">{{ editing_project['partner_en'] if editing_project else '' }}</textarea>
+                    <small>Enter one partner organisation per line.</small>
+                </div>
+                <div>
+                    <label for="partner_th">Partner Organisations TH</label>
+                    <textarea id="partner_th" name="partner_th" rows="5">{{ editing_project['partner_th'] if editing_project else '' }}</textarea>
+                    <small>Enter one partner organisation per line.</small>
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="funding_en">Funding Source EN</label>
+                    <input type="text" id="funding_en" name="funding_en" value="{{ editing_project['funding_en'] if editing_project else '' }}">
+                </div>
+                <div>
+                    <label for="funding_th">Funding Source TH</label>
+                    <input type="text" id="funding_th" name="funding_th" value="{{ editing_project['funding_th'] if editing_project else '' }}">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="budget_en">Budget EN</label>
+                    <input type="text" id="budget_en" name="budget_en" value="{{ editing_project['budget_en'] if editing_project else '' }}">
+                </div>
+                <div>
+                    <label for="budget_th">Budget TH</label>
+                    <input type="text" id="budget_th" name="budget_th" value="{{ editing_project['budget_th'] if editing_project else '' }}">
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="collaboration_details_en">Collaboration Details EN</label>
+                    <textarea id="collaboration_details_en" name="collaboration_details_en" rows="6">{{ editing_project['collaboration_details_en'] if editing_project else '' }}</textarea>
+                </div>
+                <div>
+                    <label for="collaboration_details_th">Collaboration Details TH</label>
+                    <textarea id="collaboration_details_th" name="collaboration_details_th" rows="6">{{ editing_project['collaboration_details_th'] if editing_project else '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="admin-form-grid admin-form-grid-two" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div>
+                    <label for="description_en">Project Description EN <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <textarea id="description_en" name="description_en" rows="8" data-project-required="ongoing">{{ editing_project['description_en'] if editing_project else '' }}</textarea>
+                </div>
+                <div>
+                    <label for="description_th">Project Description TH <span class="required-indicator" data-required-indicator hidden>*</span></label>
+                    <textarea id="description_th" name="description_th" rows="8" data-project-required="ongoing">{{ editing_project['description_th'] if editing_project else '' }}</textarea>
+                </div>
+            </div>
+
+            <section class="admin-dynamic-section" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div class="admin-dynamic-header">
+                    <div>
+                        <h2>Custom Project Team Fields</h2>
+                        <p>Add extra one-person roles here. Each card below lets you define the role label, the person's name, and an optional photo for the Project Team section.</p>
+                        <p class="admin-form-hint">Click the button on the right to add custom Project Team fields.</p>
+                    </div>
+                    <button type="button" class="admin-action-button" data-add-custom-team data-collapsed-label="Add Team Field" data-expanded-label="Add Another Team Field">Add Team Field</button>
+                </div>
+                <div class="admin-dynamic-list" data-custom-team-list hidden></div>
+            </section>
+
+            <section class="admin-dynamic-section" data-project-scope="ongoing" {% if current_project_type != 'ongoing' %}hidden{% endif %}>
+                <div class="admin-dynamic-header">
+                    <div>
+                        <h2>Custom Other Project Detail Fields</h2>
+                        <p>Use the cards below to add both a field name and its content. These entries will appear inside Other Project Details on the project detail page.</p>
+                        <p class="admin-form-hint">Click the button on the right to add custom Other Project Detail fields.</p>
+                    </div>
+                    <button type="button" class="admin-action-button" data-add-custom-detail data-collapsed-label="Add Detail Field" data-expanded-label="Add Another Detail Field">Add Detail Field</button>
+                </div>
+                <div class="admin-dynamic-list" data-custom-detail-list hidden></div>
+            </section>
+
+            <div class="admin-form-actions">
+                <button type="submit">{% if editing_project %}Update Project{% else %}Add Project{% endif %}</button>
+                {% if editing_project %}
+                    <a class="secondary-link" href="{{ url_for('admin.projects') }}">Cancel Edit</a>
+                {% else %}
+                    <a class="secondary-link dashboard-link" href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Admin project list -->
+        <section class="staff-admin-list">
+            <h2>Current Project List</h2>
+            <div class="staff-admin-grid">
+                {% for project in project_list %}
+                    <article class="staff-admin-card">
+                        <div class="project-admin-topline">
+                            <span class="project-admin-type {% if project['project_type'] == 'ongoing' %}ongoing-pill{% else %}finished-pill{% endif %}">{{ project['project_type']|capitalize }}</span>
+                            <span class="project-admin-year">{{ project['duration_en'] or project['year_en'] or '-' }}</span>
+                        </div>
+                        <h3>{{ project['title_en'] }}</h3>
+                        {% if project['project_type'] == 'ongoing' and project['leader_en'] %}
+                            <p>Leader: {{ project['leader_en'] }}</p>
+                        {% endif %}
+                        <div class="staff-admin-actions">
+                            <a href="{{ url_for('admin.projects', edit_id=project['id']) }}">Edit</a>
+                            <form method="POST" class="admin-inline-form" onsubmit="return confirm('Delete this project?');">
+                                <input type="hidden" name="form_action" value="delete_project">
+                                <input type="hidden" name="delete_project_id" value="{{ project['id'] }}">
+                                <button type="submit" class="link-button">Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+    <script id="researcher-fields-data" type="application/json">{{ editing_researchers|tojson }}</script>
+    <script id="engineer-fields-data" type="application/json">{{ editing_engineers|tojson }}</script>
+    <script id="assistant-fields-data" type="application/json">{{ editing_assistants|tojson }}</script>
+    <script id="custom-team-fields-data" type="application/json">{{ editing_custom_team_fields|tojson }}</script>
+    <script id="custom-detail-fields-data" type="application/json">{{ editing_custom_detail_fields|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/admin/admin_file_previews.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/admin_projects.js') }}"></script>
+</body>
+</html>

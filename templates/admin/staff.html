@@ -1,0 +1,269 @@
+<!-- Main purpose: SCEM admin staff page for creating, editing, and deleting team-member records. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Our Team</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}">
+</head>
+<body>
+    <!-- Main container for the Our Team admin page -->
+    <main class="admin-form-page">
+        <!-- Page title and description -->
+        <section class="admin-form-header">
+            <h1>Manage Our Team</h1>
+            <p>Add, edit, and update each staff member's position, department, photo, profile link, or profile PDF.</p>
+        </section>
+
+        <!-- Show the success message after a successful action -->
+        {% if success_message %}
+            <p class="success-message">{{ success_message }}</p>
+        {% endif %}
+
+        <!-- Our Team create/edit form.
+             When editing_staff exists, the form is in edit mode.
+             Otherwise it is in create mode. -->
+        <form method="POST" class="admin-form-card" enctype="multipart/form-data">
+            {% if editing_staff %}
+                <input type="hidden" name="staff_id" value="{{ editing_staff['id'] }}">
+            {% endif %}
+
+            <label for="name_en">Name EN <span class="required-indicator">*</span></label>
+            <input
+                type="text"
+                id="name_en"
+                name="name_en"
+                value="{{ editing_staff['name_en'] if editing_staff else '' }}"
+                required
+            >
+
+            <label for="name_th">Name TH <span class="required-indicator">*</span></label>
+            <input
+                type="text"
+                id="name_th"
+                name="name_th"
+                value="{{ editing_staff['name_th'] if editing_staff else '' }}"
+                required
+            >
+
+            <label for="position_en">Position EN</label>
+            <input
+                type="text"
+                id="position_en"
+                name="position_en"
+                value="{{ editing_staff['position_en'] if editing_staff else '' }}"
+                placeholder="Leader / Member / Advisor / Researcher"
+            >
+
+            <label for="position_th">Position TH</label>
+            <input
+                type="text"
+                id="position_th"
+                name="position_th"
+                value="{{ editing_staff['position_th'] if editing_staff else '' }}"
+                placeholder="Enter the position in Thai"
+            >
+
+            <label for="department_en">Department / Note EN</label>
+            <input
+                type="text"
+                id="department_en"
+                name="department_en"
+                value="{{ editing_staff['department_en'] if editing_staff else '' }}"
+                placeholder="Department of Industrial Engineering"
+            >
+
+            <label for="department_th">Department / Note TH</label>
+            <input
+                type="text"
+                id="department_th"
+                name="department_th"
+                value="{{ editing_staff['department_th'] if editing_staff else '' }}"
+                placeholder="Enter the department or note in Thai"
+            >
+
+            <label for="staff_group">Staff Group <span class="required-indicator">*</span></label>
+            <select id="staff_group" name="staff_group" required>
+                {% set current_staff_group = (editing_staff['staff_group'] if editing_staff else 'member') %}
+                <option value="advisor" {% if current_staff_group == 'advisor' %}selected{% endif %}>ADVISOR</option>
+                <option value="member" {% if current_staff_group == 'member' %}selected{% endif %}>MEMBER</option>
+                <option value="researcher" {% if current_staff_group == 'researcher' %}selected{% endif %}>RESEARCHER</option>
+            </select>
+            <p class="admin-form-hint">Choose which Our Team section this person should appear in.</p>
+
+            <label for="photo_file">Photo</label>
+            <div class="admin-upload-field" data-upload-field>
+                {% if editing_staff and editing_staff['photo_filename'] %}
+                    <div class="admin-upload-preview">
+                        <p class="admin-current-file">Current photo: {{ editing_staff['photo_filename'] }}</p>
+                        <div class="admin-upload-preview-media admin-upload-preview-media-image">
+                            <img src="{{ url_for('static', filename='uploads/' ~ editing_staff['photo_filename']) }}" alt="{{ editing_staff['name_en'] }} photo preview">
+                        </div>
+                    </div>
+                {% endif %}
+                <input
+                    type="file"
+                    id="photo_file"
+                    name="photo_file"
+                    accept=".jpg,.jpeg,.png,.gif,.webp,image/*"
+                    data-file-preview="image"
+                >
+                <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+            </div>
+            <p class="admin-form-hint">Upload a JPG, PNG, GIF, or WEBP image. Leave empty when editing to keep the current photo.</p>
+
+            <label for="sort_order">Display Order</label>
+            <input
+                type="number"
+                id="sort_order"
+                name="sort_order"
+                value="{{ editing_staff['sort_order'] if editing_staff else 0 }}"
+                min="0"
+                step="1"
+            >
+
+            <label for="profile_url">Profile URL</label>
+            <input
+                type="text"
+                id="profile_url"
+                name="profile_url"
+                value="{{ editing_staff['profile_url'] if editing_staff else '' }}"
+                placeholder="https://example.com/profile or leave empty when uploading a PDF"
+            >
+
+            <label for="scopus_author_id">Scopus Author ID</label>
+            <input
+                type="text"
+                id="scopus_author_id"
+                name="scopus_author_id"
+                value="{{ editing_staff['scopus_author_id'] if editing_staff else '' }}"
+                placeholder="e.g. 13403750900"
+            >
+            <p class="admin-form-hint">If present, this person's Scopus h-index can be updated automatically through the Scopus API sync.</p>
+
+            <label for="scopus_hindex">Scopus h-index</label>
+            <input
+                type="number"
+                id="scopus_hindex"
+                name="scopus_hindex"
+                value="{{ editing_staff['scopus_hindex'] if editing_staff and editing_staff['scopus_hindex'] is not none else '' }}"
+                min="0"
+                step="1"
+                placeholder="e.g. 12"
+            >
+            <p class="admin-form-hint">You can leave this empty and let the automatic sync update it, or enter a value manually when needed.</p>
+
+            <label for="profile_pdf_file">Profile PDF</label>
+            <div class="admin-upload-field" data-upload-field>
+                {% if editing_staff and editing_staff['profile_url'] and (editing_staff['profile_url']|lower).endswith('.pdf') %}
+                    <div class="admin-upload-preview">
+                        <p class="admin-current-file">Current PDF: {{ editing_staff['profile_url'] }}</p>
+                        <div class="admin-upload-preview-media admin-upload-preview-media-document">
+                            <iframe src="{{ editing_staff['profile_url'] }}" title="Current profile PDF preview"></iframe>
+                        </div>
+                    </div>
+                {% endif %}
+                <input
+                    type="file"
+                    id="profile_pdf_file"
+                    name="profile_pdf_file"
+                    accept=".pdf,application/pdf"
+                    data-file-preview="pdf"
+                >
+                <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+            </div>
+            <p class="admin-form-hint">If you upload a PDF, it will replace the Profile URL automatically.</p>
+
+            <label for="audio_en_file">Introduction Audio EN File</label>
+            <div class="admin-upload-field" data-upload-field>
+                {% if editing_staff and editing_staff['audio_en_url'] %}
+                    <div class="admin-upload-preview">
+                        <p class="admin-current-file">Current EN audio: {{ editing_staff['audio_en_url'] }}</p>
+                        <div class="admin-upload-preview-media admin-upload-preview-media-audio">
+                            <audio controls preload="metadata">
+                                <source src="{{ editing_staff['audio_en_url'] }}">
+                                Your browser does not support audio preview.
+                            </audio>
+                        </div>
+                    </div>
+                {% endif %}
+                <input
+                    type="file"
+                    id="audio_en_file"
+                    name="audio_en_file"
+                    accept=".mp3,.m4a,.wav,.ogg,.aac,audio/*"
+                    data-file-preview="audio"
+                >
+                <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+            </div>
+
+            <label for="audio_th_file">Introduction Audio TH File</label>
+            <div class="admin-upload-field" data-upload-field>
+                {% if editing_staff and editing_staff['audio_th_url'] %}
+                    <div class="admin-upload-preview">
+                        <p class="admin-current-file">Current TH audio: {{ editing_staff['audio_th_url'] }}</p>
+                        <div class="admin-upload-preview-media admin-upload-preview-media-audio">
+                            <audio controls preload="metadata">
+                                <source src="{{ editing_staff['audio_th_url'] }}">
+                                Your browser does not support audio preview.
+                            </audio>
+                        </div>
+                    </div>
+                {% endif %}
+                <input
+                    type="file"
+                    id="audio_th_file"
+                    name="audio_th_file"
+                    accept=".mp3,.m4a,.wav,.ogg,.aac,audio/*"
+                    data-file-preview="audio"
+                >
+                <div class="admin-upload-preview admin-upload-preview-selected" data-selected-preview hidden></div>
+            </div>
+            <p class="admin-form-hint">Upload MP3, M4A, WAV, OGG, or AAC audio. Leave empty when editing to keep the current audio file.</p>
+
+            <div class="admin-form-actions">
+                <button type="submit">{% if editing_staff %}Update Team Member{% else %}Add Team Member{% endif %}</button>
+                {% if editing_staff %}
+                    <a class="secondary-link" href="{{ url_for('admin.staff') }}">Cancel Edit</a>
+                {% else %}
+                    <a class="secondary-link dashboard-link" href="{{ url_for('admin.dashboard') }}">Back to Dashboard</a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Our Team list section -->
+        <section class="staff-admin-list">
+            <h2>Current Team List</h2>
+
+            <!-- List each current staff record so admins can edit or delete directly -->
+            <div class="staff-admin-grid">
+                {% for staff in staff_list %}
+                    <article class="staff-admin-card">
+                        <!-- Show the current photo preview so admins can verify the file matches the correct person -->
+                        <div class="staff-admin-photo">
+                            {% if staff['photo_filename'] %}
+                                <img src="{{ url_for('static', filename='uploads/' ~ staff['photo_filename']) }}" alt="{{ staff['name_en'] }}">
+                            {% else %}
+                                <div class="staff-admin-photo-placeholder" aria-hidden="true">No Photo</div>
+                            {% endif %}
+                        </div>
+                        <h3>{{ staff['name_en'] }}</h3>
+                        <p>{{ staff['name_th'] }}</p>
+                        <div class="staff-admin-actions">
+                            <a href="{{ url_for('admin.staff', edit_id=staff['id']) }}">Edit</a>
+                            <form method="POST" class="admin-inline-form" onsubmit="return confirm('Delete this team member?');">
+                                <input type="hidden" name="form_action" value="delete_staff">
+                                <input type="hidden" name="delete_staff_id" value="{{ staff['id'] }}">
+                                <button type="submit" class="link-button">Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='js/admin/admin_file_previews.js') }}"></script>
+</body>
+</html>

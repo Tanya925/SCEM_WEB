@@ -1,0 +1,100 @@
+<!-- Main purpose: render the public publications page and connect it to the JSON data API. -->
+
+<!DOCTYPE html>
+<html lang="{{ current_language }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if current_language == "th" %}ผลงานตีพิมพ์ | SCEM{% else %}Publications | SCEM{% endif %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/public/responsive.css') }}">
+</head>
+<body data-language="{{ current_language }}">
+    {% include "public/_public_header.html" %}
+
+    <section class="hero-section reveal-card page-hero-bleed publication-page-hero">
+        <div class="page-hero-inner page-hero-inner-grid">
+            <div class="publication-hero-copy">
+                <div class="research-hero-kicker publication-page-kicker">
+                    {% if current_language == "th" %}ผลงานวิจัยของ SCEM{% else %}SCEM RESEARCH OUTPUT{% endif %}
+                </div>
+                <h1>{% if current_language == "th" %}ผลงานตีพิมพ์{% else %}Publications{% endif %}</h1>
+                <p class="hero-subtitle">
+                    {% if current_language == "th" %}
+                        เรียกดูผลงานตีพิมพ์ของคณาจารย์ SCEM โดยข้อมูลบรรณานุกรมอ้างอิงจาก Scopus และกดปุ่มดูแหล่งข้อมูลเพื่อเปิดต้นฉบับ โดยรายการผลงานเริ่มตั้งแต่ปี 2020 และมีการอัปเดตต่อเนื่องจนถึงปัจจุบัน
+                    {% else %}
+                        Browse publications by SCEM faculty, with bibliographic data sourced from Scopus. Use the View source button to open the original source. This publication list starts from 2020 and is continuously updated through the present.
+                    {% endif %}
+                </p>
+            </div>
+
+            <aside class="publication-hero-count" aria-live="polite">
+                <strong data-publication-total>—</strong>
+                <span>{% if current_language == "th" %}ผลงานตีพิมพ์{% else %}Publications{% endif %}</span>
+            </aside>
+        </div>
+    </section>
+
+    <main
+        class="home-page publication-page"
+        data-publication-page
+        data-publications-url="{{ url_for('public.publication_data') }}"
+    >
+        <section class="publication-directory">
+            <div class="publication-toolbar">
+                <div class="publication-filter-field publication-search-field">
+                    <label for="publication-search">
+                        {% if current_language == "th" %}ค้นหาผลงานตีพิมพ์{% else %}Search Publications{% endif %}
+                    </label>
+                    <input
+                        id="publication-search"
+                        type="search"
+                        data-publication-search
+                        placeholder="{% if current_language == 'th' %}ค้นหาชื่อเรื่อง ผู้แต่ง หรือวารสาร{% else %}Search by title, author, or journal{% endif %}"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="publication-filter-field">
+                    <label for="publication-year">
+                        {% if current_language == "th" %}ปีที่ตีพิมพ์{% else %}Publication Year{% endif %}
+                    </label>
+                    <select id="publication-year" data-publication-year>
+                        <option value="all">{% if current_language == "th" %}ทุกปี{% else %}All Years{% endif %}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="publication-results-summary" aria-live="polite">
+                <span data-publication-visible>0</span>
+                <span>{% if current_language == "th" %}รายการ{% else %}results{% endif %}</span>
+            </div>
+
+            <div class="publication-status" data-publication-loading>
+                {% if current_language == "th" %}กำลังโหลดผลงานตีพิมพ์…{% else %}Loading publications…{% endif %}
+            </div>
+            <div class="publication-list" data-publication-list></div>
+            <p class="empty-text publication-empty" data-publication-empty hidden>
+                {% if current_language == "th" %}
+                    ไม่พบผลงานตีพิมพ์ที่ตรงกับเงื่อนไข
+                {% else %}
+                    No publications match your search.
+                {% endif %}
+            </p>
+            <p class="empty-text publication-error" data-publication-error hidden>
+                {% if current_language == "th" %}
+                    ไม่สามารถโหลดข้อมูลผลงานตีพิมพ์ได้ในขณะนี้
+                {% else %}
+                    Publication data could not be loaded.
+                {% endif %}
+            </p>
+        </section>
+    </main>
+
+    {% include "public/_public_footer.html" %}
+
+    <script src="{{ url_for('static', filename='js/public/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/public/language.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/public/publications.js') }}"></script>
+</body>
+</html>

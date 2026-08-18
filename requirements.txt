@@ -1,0 +1,5 @@
+# Main purpose: list the Python packages required by the website, deployment, and the Scopus scheduler.
+Flask
+Flask-APScheduler
+python-dotenv
+gunicorn

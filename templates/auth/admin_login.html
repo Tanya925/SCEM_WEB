@@ -1,0 +1,65 @@
+<!-- Main purpose: render the administrator login page structure and form fields. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCEM Back Office Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin.css') }}">
+</head>
+<body>
+    <!-- Page structure and field notes. -->
+    <main class="admin-login-page">
+        <!-- Page structure and field notes. -->
+        <div class="admin-login-card">
+            <div class="admin-login-header">
+                <a class="back-to-site-link" href="{{ url_for('public.index') }}">Back to Main Site</a>
+                <h1>SCEM Back Office Login</h1>
+
+                <!-- Page structure and field notes. -->
+                <p>Administrators, faculty, and researchers can sign in here.</p>
+            </div>
+
+            <!-- Page structure and field notes. -->
+            {% if error_message %}
+                <p class="admin-login-error">{{ error_message }}</p>
+            {% endif %}
+
+            <!-- Page structure and field notes. -->
+            <form method="POST" class="admin-login-form">
+                <!-- Page structure and field notes. -->
+                <div>
+                    <label for="username">Username</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Enter your username"
+                        required
+                    >
+                </div>
+
+                <!-- Page structure and field notes. -->
+                <div>
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required
+                    >
+                </div>
+
+                <!-- Page structure and field notes. -->
+                <button type="submit">Login</button>
+            </form>
+
+            <!-- Page structure and field notes. -->
+            <p class="admin-login-help">Forgot your username or password? Please contact the administrator.</p>
+        </div>
+    </main>
+</body>
+</html>
+
