@@ -12,26 +12,28 @@
 <body data-language="{{ current_language }}">
     {% include "public/_public_header.html" %}
 
-    <section class="hero-section reveal-card page-hero-bleed publication-page-hero">
-        <div class="page-hero-inner page-hero-inner-grid">
-            <div class="publication-hero-copy">
-                <div class="research-hero-kicker publication-page-kicker">
-                    {% if current_language == "th" %}ผลงานวิจัยของ SCEM{% else %}SCEM RESEARCH OUTPUT{% endif %}
-                </div>
-                <h1>{% if current_language == "th" %}ผลงานตีพิมพ์{% else %}Publications{% endif %}</h1>
-                <p class="hero-subtitle">
-                    {% if current_language == "th" %}
-                        เรียกดูผลงานตีพิมพ์ของคณาจารย์ SCEM โดยข้อมูลบรรณานุกรมอ้างอิงจาก Scopus และกดปุ่มดูแหล่งข้อมูลเพื่อเปิดต้นฉบับ โดยรายการผลงานเริ่มตั้งแต่ปี 2020 และมีการอัปเดตต่อเนื่องจนถึงปัจจุบัน
-                    {% else %}
-                        Browse publications by SCEM faculty, with bibliographic data sourced from Scopus. Use the View source button to open the original source. This publication list starts from 2020 and is continuously updated through the present.
-                    {% endif %}
-                </p>
+    <section class="hero-section page-hero-bleed publication-page-hero">
+        <div class="page-hero-inner publication-page-hero-inner">
+            <div class="research-hero-kicker publication-page-kicker">
+                {% if current_language == "th" %}ผลงานวิจัยของ SCEM{% else %}SCEM RESEARCH OUTPUT{% endif %}
             </div>
+            <div class="publication-page-hero-layout">
+                <div class="publication-page-hero-copy">
+                    <h1>{% if current_language == "th" %}ผลงานตีพิมพ์{% else %}Publications{% endif %}</h1>
+                    <p class="hero-subtitle">
+                        {% if current_language == "th" %}
+                            เรียกดูผลงานตีพิมพ์ของคณาจารย์ SCEM โดยข้อมูลบรรณานุกรมอ้างอิงจาก Scopus และกดปุ่มดูแหล่งข้อมูลเพื่อเปิดต้นฉบับ โดยรายการผลงานเริ่มตั้งแต่ปี 2020 และมีการอัปเดตต่อเนื่องจนถึงปัจจุบัน
+                        {% else %}
+                            Browse publications by SCEM faculty, with bibliographic data sourced from Scopus. Use the View source button to open the original source. This publication list starts from 2020 and is continuously updated through the present.
+                        {% endif %}
+                    </p>
+                </div>
 
-            <aside class="publication-hero-count" aria-live="polite">
-                <strong data-publication-total>—</strong>
-                <span>{% if current_language == "th" %}ผลงานตีพิมพ์{% else %}Publications{% endif %}</span>
-            </aside>
+                <aside class="publication-inline-count" aria-live="polite">
+                    <strong data-publication-total>—</strong>
+                    <span>{% if current_language == "th" %}ผลงานตีพิมพ์{% else %}Publications{% endif %}</span>
+                </aside>
+            </div>
         </div>
     </section>
 

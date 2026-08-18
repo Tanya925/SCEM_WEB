@@ -60,14 +60,15 @@
 }
 
 @media (max-width: 900px) {
-    .publication-page-hero .page-hero-inner-grid {
+    .publication-page-hero-layout {
         grid-template-columns: 1fr;
         align-items: start;
     }
 
-    .publication-hero-count {
+    .publication-inline-count {
         min-width: 0;
         width: min(100%, 240px);
+        justify-self: start;
     }
 
     .publication-toolbar {
@@ -429,6 +430,14 @@
 }
 
 @media (max-width: 640px) {
+    .publication-page-hero {
+        padding: 36px 0 30px;
+    }
+
+    .publication-page-hero.hero-section {
+        margin-bottom: 2px;
+    }
+
     .publication-directory {
         padding: 0;
         border-radius: 0;

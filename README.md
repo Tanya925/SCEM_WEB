@@ -62,8 +62,6 @@ Create a `.env` file in the project root:
 ```env
 SECRET_KEY=replace-with-your-own-secret
 SCOPUS_API_KEY=replace-with-your-scopus-key
-DEFAULT_ADMIN_USERNAME=SCEM_admin
-DEFAULT_ADMIN_PASSWORD=replace-with-your-admin-password
 SCOPUS_SYNC_INTERVAL_MINUTES=1440
 WEB_CONCURRENCY=1
 ```
@@ -74,10 +72,6 @@ Field descriptions:
   - Secret key used for Flask sessions
 - `SCOPUS_API_KEY`
   - API key for Scopus / SciVal requests
-- `DEFAULT_ADMIN_USERNAME`
-  - Initial administrator username used for account creation or reset
-- `DEFAULT_ADMIN_PASSWORD`
-  - Initial administrator password used for account creation or reset
 - `SCOPUS_SYNC_INTERVAL_MINUTES`
   - Interval, in minutes, for the automatic synchronization job
 - `WEB_CONCURRENCY`
@@ -165,8 +159,6 @@ Available admin pages:
 
 - `/0630_SCEMadmin/login`
   - Administrator login
-- `/0630_SCEMadmin/change-credentials`
-  - Forced credential change after first login or after a reset
 - `/0630_SCEMadmin/dashboard`
   - Admin dashboard
 - `/0630_SCEMadmin/general-info`
@@ -176,7 +168,7 @@ Available admin pages:
 - `/0630_SCEMadmin/projects`
   - Research project management
 - `/0630_SCEMadmin/passwords`
-  - Administrator credential reset page
+  - Administrator credential update page
 
 Only a single administrator account is currently supported.
 
@@ -184,22 +176,16 @@ Only a single administrator account is currently supported.
 
 ## 5. Administrator Login Flow
 
-The initial administrator credentials come from:
+The application seeds a single built-in administrator account when the database is first created.
 
-- Username: `DEFAULT_ADMIN_USERNAME`
-- Password: `DEFAULT_ADMIN_PASSWORD`
+If the administrator wants to change the login later, they can do it directly from:
 
-After the first login, or after an account reset, the administrator must:
-
-1. Enter the current password
-2. Choose a new username
-3. Choose a new password
-4. Confirm the new password
+- `/0630_SCEMadmin/passwords`
 
 Rules:
 
-- The new username must differ from the temporary username
 - The new username must be unique
+- The current password is required before saving changes
 - The new password must contain at least 8 characters
 - The new password must differ from the current password
 

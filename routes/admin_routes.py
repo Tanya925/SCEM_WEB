@@ -5,7 +5,7 @@ from flask import Blueprint, redirect, render_template, request, session, url_fo
 from database.auth_db import get_user_by_id
 from services.auth_service import (
     PasswordChangeError,
-    reset_administrator_credentials,
+    change_user_credentials,
 )
 
 from services.admin_service import (  
@@ -20,13 +20,11 @@ from services.admin_service import (
 admin_bp = Blueprint("admin", __name__, url_prefix="/0630_SCEMadmin")
 
 def login_required(view_function):
-    """Require login and redirect to the credential-change page when necessary."""
+    """Require login before accessing admin pages."""
     @wraps(view_function)
     def wrapped_view(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("auth.login"))
-        if session.get("must_change_credentials"):
-            return redirect(url_for("auth.change_credentials"))
 
         return view_function(*args, **kwargs)
 
@@ -75,23 +73,25 @@ def staff():
 @admin_bp.route("/passwords", methods=["GET", "POST"])
 @login_required
 def passwords():
-    """Handle administrator credential resets."""
+    """Allow the signed-in administrator to update their own login details."""
     if request.method == "POST":
-        user_id = request.form.get("user_id", type=int)
         try:
-            restored_username = reset_administrator_credentials(user_id)
-            target_user = get_user_by_id(user_id)
-            target_name = target_user["username"] if target_user else "Administrator"
-
-            if user_id == session.get("user_id"):
-                session.clear()
-                return redirect(url_for("auth.login"))
-
+            requested_username = request.form.get("new_username", "").strip()
             session["password_management_feedback"] = {
-                "success_message": (
-                    f"{target_name}'s account was reset. The initial username is "
-                    f"{restored_username}. They must choose a new username and password after signing in."
-                ),
+                "success_message": None,
+                "error_message": None,
+            }
+            change_user_credentials(
+                session["user_id"],
+                request.form.get("current_password", ""),
+                requested_username,
+                request.form.get("new_password", ""),
+                request.form.get("confirm_password", ""),
+            )
+            if requested_username:
+                session["username"] = requested_username
+            session["password_management_feedback"] = {
+                "success_message": "Administrator login updated successfully.",
                 "error_message": None,
             }
         except PasswordChangeError as error:
@@ -102,9 +102,10 @@ def passwords():
         return redirect(url_for("admin.passwords"))
 
     feedback = session.pop("password_management_feedback", {})
+    current_user = get_user_by_id(session["user_id"])
     return render_template(
         "admin/passwords.html",
-        admin_accounts=[get_user_by_id(session["user_id"])],
+        current_username=current_user["username"] if current_user else session.get("username", ""),
         success_message=feedback.get("success_message"),
         error_message=feedback.get("error_message"),
     )
