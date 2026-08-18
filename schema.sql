@@ -520,12 +520,10 @@ CREATE TABLE users (
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE SET NULL
             );
-INSERT INTO "users" VALUES(1,NULL,'SCEM_admin','scrypt:32768:8:1$SMIUhVLv9uwUwv94$b1778aff41f12e8cae8429a01e800e3bcd638fbd708a44fdd5c74ce074e1e075c592891f86abce74af155edbe96fd4a8a4261c7d20f3d9d4e90f05b23c475266','2026-08-08 05:37:02','2026-08-08 05:37:02');
 DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('home_activity_images',7);
 INSERT INTO "sqlite_sequence" VALUES('staff',23);
 INSERT INTO "sqlite_sequence" VALUES('research_projects',153);
 INSERT INTO "sqlite_sequence" VALUES('general_info',1);
-INSERT INTO "sqlite_sequence" VALUES('users',1);
 INSERT INTO "sqlite_sequence" VALUES('publications',167);
 COMMIT;

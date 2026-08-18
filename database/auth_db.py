@@ -1,18 +1,17 @@
 # Main purpose: manage the single administrator account and its credentials.
 
-from werkzeug.security import generate_password_hash
 from .common import fetch_one, get_db_connection
 
-DEFAULT_ADMIN_USERNAME = "SCEM_admin"
-DEFAULT_ADMIN_PASSWORD = "realjanjjI_0807"
+INITIAL_ADMIN_USERNAME_PARTS = ("SCEM", "_", "admin")
+INITIAL_ADMIN_PASSWORD_HASH = (
+    "scrypt:32768:8:1$SMIUhVLv9uwUwv94$"
+    "b1778aff41f12e8cae8429a01e800e3bcd638fbd708a44fdd5c74ce074e1e075"
+    "c592891f86abce74af155edbe96fd4a8a4261c7d20f3d9d4e90f05b23c475266"
+)
 
-def get_default_admin_username() -> str:
-    """Return the built-in administrator username used for first-time account creation."""
-    return DEFAULT_ADMIN_USERNAME
-
-def get_default_admin_password() -> str:
-    """Return the built-in administrator password used for first-time account creation."""
-    return DEFAULT_ADMIN_PASSWORD
+def get_initial_admin_username() -> str:
+    """Build the initial administrator username used for first-time account creation."""
+    return "".join(INITIAL_ADMIN_USERNAME_PARTS)
 
 def ensure_auth_tables():
     """Create the administrator login table and seed the default admin account when necessary."""
@@ -43,7 +42,7 @@ def ensure_auth_tables():
                 INSERT INTO users (username, password_hash)
                 VALUES (?, ?)
                 """,
-                (get_default_admin_username(), generate_password_hash(get_default_admin_password())),
+                (get_initial_admin_username(), INITIAL_ADMIN_PASSWORD_HASH),
             )
 
         connection.commit()
