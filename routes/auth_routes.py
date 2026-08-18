@@ -28,7 +28,6 @@ def login():
                 session.permanent = True
                 session["user_id"] = user["id"]
                 session["username"] = user["username"]
-                session["display_name"] = user["display_name"] or user["username"]
                 session["must_change_credentials"] = bool(user["must_change_credentials"])
 
                 if session["must_change_credentials"]:

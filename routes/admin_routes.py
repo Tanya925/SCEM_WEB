@@ -81,7 +81,7 @@ def passwords():
         try:
             restored_username = reset_administrator_credentials(user_id)
             target_user = get_user_by_id(user_id)
-            target_name = target_user["display_name"] or target_user["username"]
+            target_name = target_user["username"] if target_user else "Administrator"
 
             if user_id == session.get("user_id"):
                 session.clear()

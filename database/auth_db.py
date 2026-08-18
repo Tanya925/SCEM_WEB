@@ -24,7 +24,6 @@ def ensure_auth_tables():
                 staff_id INTEGER UNIQUE,
                 username TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
-                display_name TEXT NOT NULL DEFAULT '',
                 must_change_credentials INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -42,8 +41,8 @@ def ensure_auth_tables():
             connection.execute(
                 """
                 INSERT INTO users
-                    (username, password_hash, display_name, must_change_credentials)
-                VALUES (?, ?, 'Administrator', 1)
+                    (username, password_hash, must_change_credentials)
+                VALUES (?, ?, 1)
                 """,
                 (get_default_admin_username(), generate_password_hash(get_default_admin_password())),
             )
@@ -66,7 +65,7 @@ def rebuild_users_table_without_role(connection) -> None:
     """Rebuild the legacy role-based users table into the single-admin version."""
     admin_row = connection.execute(
         """
-        SELECT id, staff_id, username, password_hash, display_name,
+        SELECT id, staff_id, username, password_hash,
                must_change_credentials, created_at, updated_at
         FROM users
         WHERE role = 'admin'
@@ -82,7 +81,6 @@ def rebuild_users_table_without_role(connection) -> None:
             staff_id INTEGER UNIQUE,
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
-            display_name TEXT NOT NULL DEFAULT '',
             must_change_credentials INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -95,17 +93,16 @@ def rebuild_users_table_without_role(connection) -> None:
         connection.execute(
             """
             INSERT INTO users__new (
-                id, staff_id, username, password_hash, display_name,
+                id, staff_id, username, password_hash,
                 must_change_credentials, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 admin_row["id"],
                 admin_row["staff_id"],
                 admin_row["username"],
                 admin_row["password_hash"],
-                admin_row["display_name"],
                 admin_row["must_change_credentials"],
                 admin_row["created_at"],
                 admin_row["updated_at"],
