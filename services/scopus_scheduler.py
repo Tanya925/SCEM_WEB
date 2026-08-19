@@ -1,6 +1,4 @@
-"""Attach Flask-APScheduler to the SCEM site and run the Scopus sync job on a schedule."""
-
-"""Attach Flask-APScheduler to the SCEM site and run the Scopus sync on a schedule."""
+# Attach Flask-APScheduler to the SCEM site and run the Scopus sync job on a schedule.
 
 import os
 
@@ -13,8 +11,8 @@ from services.scopus_sync_service import sync_scopus_dataset
 
 scheduler = APScheduler() if APScheduler is not None else None
 
+# Job function executed by APScheduler to run one Scopus synchronization pass and print a short deployment-friendly summary.
 def run_scheduled_scopus_sync() -> None:
-    """Job function executed by APScheduler to run one Scopus synchronization pass and print a short deployment-friendly summary."""
     result = sync_scopus_dataset()
     publication_summary = result["publication_summary"]
     print(
@@ -28,13 +26,13 @@ def run_scheduled_scopus_sync() -> None:
         for error in result["errors"]:
             print(f"- {error}")
 
+#
+#     Decide whether this Flask process should start the built-in scheduler.
+#
+#     This mainly prevents duplicate scheduler startup during debug reloads or
+#     when the site is running with multiple web workers.
+#     
 def should_start_scheduler(flask_app) -> bool:
-    """
-    Decide whether this Flask process should start the built-in scheduler.
-
-    This mainly prevents duplicate scheduler startup during debug reloads or
-    when the site is running with multiple web workers.
-    """
     if flask_app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
         return False
 
@@ -54,12 +52,12 @@ def should_start_scheduler(flask_app) -> bool:
 
     return True
 
+#
+#     Initialize Flask-APScheduler and start it when conditions allow.
+#
+#     Returns `True` when the scheduler is started in this process.
+#     
 def init_scopus_scheduler(flask_app) -> bool:
-    """
-    Initialize Flask-APScheduler and start it when conditions allow.
-
-    Returns `True` when the scheduler is started in this process.
-    """
     if scheduler is None:
         print(
             "Flask-APScheduler is not installed yet. "
@@ -94,3 +92,4 @@ def init_scopus_scheduler(flask_app) -> bool:
         return True
 
     return False
+

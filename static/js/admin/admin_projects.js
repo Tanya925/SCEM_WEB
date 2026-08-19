@@ -1,10 +1,4 @@
-// Main purpose: drive the dynamic project-management form behavior in the admin interface.
-// Program logic note.
-// Program logic note.
-// Program logic note.
-// Program logic note.
-// Program logic note.
-
+// Main purpose: control the dynamic project-management form fields, required-state switching, photo upload fields, and custom member sections.
 document.addEventListener("DOMContentLoaded", () => {
     const projectTypeSelect = document.querySelector("[data-project-type]");
     const projectScopedSections = document.querySelectorAll("[data-project-scope]");
@@ -33,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function toggleProjectFields() {
-        // Program logic note.
+        
         const projectType = projectTypeSelect?.value === "finished" ? "finished" : "ongoing";
 
         projectScopedSections.forEach((section) => {
@@ -52,8 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
         syncRequiredIndicators();
     }
 
-    // Program logic note.
-    // Program logic note.
+    
+    
     function createTextField({ name, value = "", placeholder = "", rows = 3, type = "textarea" }) {
         if (type === "input") {
             const input = document.createElement("input");
@@ -72,8 +66,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return textarea;
     }
 
-    // Program logic note.
-    // Program logic note.
+    
+    
     function parseJsonScript(scriptId) {
         try {
             return JSON.parse(document.getElementById(scriptId)?.textContent || "[]");
@@ -82,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Program logic note.
+    
     function syncDynamicSectionState(listElement, buttonElement) {
         if (!listElement || !buttonElement) {
             return;
@@ -101,14 +95,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Program logic note.
+    
     function openDynamicSection(listElement, buttonElement) {
         listElement?.removeAttribute("hidden");
         syncDynamicSectionState(listElement, buttonElement);
     }
 
-    // Program logic note.
-    // Program logic note.
+    
+    
     function createRemoveButton() {
         const button = document.createElement("button");
         button.type = "button";
@@ -134,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return button;
     }
 
-    // Program logic note.
+    
     function createExistingPhotoPreview(filename, altText) {
         const preview = document.createElement("div");
         preview.className = "admin-upload-preview";
@@ -155,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return preview;
     }
 
-    // Program logic note.
+    
     function createPhotoUploadField({ inputName, label, filename = "", altText = "" }) {
         const photoWrap = document.createElement("div");
         photoWrap.className = "admin-form-grid";
@@ -191,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return photoWrap;
     }
 
-    // Program logic note.
+    
     function renderProjectMemberField(field = {}, config = {}) {
         const card = document.createElement("div");
         card.className = "admin-dynamic-card";
@@ -249,9 +243,9 @@ document.addEventListener("DOMContentLoaded", () => {
         config.listElement?.appendChild(card);
     }
 
-    // Program logic note.
+    
     function renderCustomTeamField(field = {}) {
-        // Program logic note.
+        
         const card = document.createElement("div");
         card.className = "admin-dynamic-card";
 
@@ -330,9 +324,9 @@ document.addEventListener("DOMContentLoaded", () => {
         teamList?.appendChild(card);
     }
 
-    // Program logic note.
+    
     function renderCustomDetailField(field = {}) {
-        // Program logic note.
+        
         const card = document.createElement("div");
         card.className = "admin-dynamic-card";
 
@@ -393,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
         detailList?.appendChild(card);
     }
 
-    // Program logic note.
+    
     const memberSections = [
         {
             listElement: researcherList,
@@ -466,4 +460,6 @@ document.addEventListener("DOMContentLoaded", () => {
     projectTypeSelect?.addEventListener("change", toggleProjectFields);
     toggleProjectFields();
 });
+
+
 

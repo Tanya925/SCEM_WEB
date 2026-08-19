@@ -1,6 +1,4 @@
-"""Synchronize staff h-index values and publication records from the Scopus APIs into local SQLite."""
-
-"""Synchronize staff h-index values and publication data from the Scopus APIs into local SQLite."""
+# Synchronize staff h-index values and publication records from the Scopus APIs into local SQLite.
 
 import json
 import os
@@ -21,22 +19,23 @@ DEFAULT_PAGE_SIZE = 25
 
 REQUEST_TIMEOUT_SECONDS = 45
 
+# Raised when the Scopus synchronization flow cannot be completed safely.
 class ScopusSyncError(RuntimeError):
-    """Raised when the Scopus synchronization flow cannot be completed safely."""
+    pass
 
+# Read the Scopus API key from the environment.
 def get_scopus_api_key() -> str:
-    """Read the Scopus API key from the environment."""
     api_key = os.environ.get("SCOPUS_API_KEY", "").strip()
     if not api_key:
         raise ScopusSyncError("SCOPUS_API_KEY is not configured.")
     return api_key
 
+#
+#     Call one Scopus API endpoint and return the decoded JSON response.
+#
+#     This helper is the shared entry point for all Scopus requests.
+#     
 def perform_scopus_request(url: str, params: dict[str, object]) -> dict:
-    """
-    Call one Scopus API endpoint and return the decoded JSON response.
-
-    This helper is the shared entry point for all Scopus requests.
-    """
     query_string = urlencode(
         {
             key: value
@@ -69,8 +68,8 @@ def perform_scopus_request(url: str, params: dict[str, object]) -> dict:
     except json.JSONDecodeError as error:
         raise ScopusSyncError("Scopus API returned invalid JSON.") from error
 
+# Extract the h-index value from a SciVal metrics payload.
 def extract_hindex(metrics_payload: dict) -> int | None:
-    """Extract the h-index value from a SciVal metrics payload."""
     results = metrics_payload.get("results") or []
     if not results:
         return None
@@ -86,8 +85,8 @@ def extract_hindex(metrics_payload: dict) -> int | None:
 
     return None
 
+# Fetch one staff member's h-index by Scopus Author ID through the SciVal metrics API.
 def fetch_staff_hindex(author_id: str) -> int | None:
-    """Fetch one staff member's h-index by Scopus Author ID through the SciVal metrics API."""
     payload = perform_scopus_request(
         AUTHOR_METRICS_URL,
         {
@@ -99,8 +98,8 @@ def fetch_staff_hindex(author_id: str) -> int | None:
     )
     return extract_hindex(payload)
 
+# Normalize the Scopus author field into the format stored by the website database.
 def normalize_authors(entry: dict) -> str:
-    """Normalize the Scopus author field into the format stored by the website database."""
     author_text = str(entry.get("author_names") or "").strip()
     if author_text:
         return author_text.replace("|", ";")
@@ -108,12 +107,12 @@ def normalize_authors(entry: dict) -> str:
     creator = str(entry.get("dc:creator") or "").strip()
     return creator
 
+#
+#     Pick the most suitable public-facing link for one publication.
+#
+#     Priority order: DOI, Scopus page, then the generic API URL.
+#     
 def build_publication_url(entry: dict) -> str:
-    """
-    Pick the most suitable public-facing link for one publication.
-
-    Priority order: DOI, Scopus page, then the generic API URL.
-    """
     doi = str(entry.get("prism:doi") or "").strip()
     if doi:
         return f"https://doi.org/{doi}"
@@ -124,13 +123,13 @@ def build_publication_url(entry: dict) -> str:
 
     return str(entry.get("prism:url") or "").strip()
 
+#
+#     Convert one Scopus search result into the website publication format.
+#
+#     Skip entries that do not contain the minimum identity fields needed for a
+#     safe database write, such as the Scopus EID, title, or publication year.
+#     
 def build_publication_record(entry: dict) -> dict | None:
-    """
-    Convert one Scopus search result into the website publication format.
-
-    Skip entries that do not contain the minimum identity fields needed for a
-    safe database write, such as the Scopus EID, title, or publication year.
-    """
     scopus_eid = str(entry.get("eid") or "").strip()
     title = str(entry.get("dc:title") or "").strip()
     cover_date = str(entry.get("prism:coverDate") or "").strip()
@@ -157,13 +156,13 @@ def build_publication_record(entry: dict) -> dict | None:
         "pdf_url": build_publication_url(entry),
     }
 
+#
+#     Fetch all publications for one staff member from the selected start year.
+#
+#     Results are paginated, so this function keeps requesting pages until the
+#     full result set has been collected.
+#     
 def fetch_staff_publications(author_id: str, start_year: int = DEFAULT_PUBLICATION_START_YEAR) -> list[dict]:
-    """
-    Fetch all publications for one staff member from the selected start year.
-
-    Results are paginated, so this function keeps requesting pages until the
-    full result set has been collected.
-    """
     publications = []
     start = 0
 
@@ -200,13 +199,13 @@ def fetch_staff_publications(author_id: str, start_year: int = DEFAULT_PUBLICATI
 
     return publications
 
+#
+#     Deduplicate publications by `scopus_eid` before writing to the database.
+#
+#     The same paper can appear multiple times when several SCEM staff members are
+#     co-authors, but the public Publications page should keep only one record.
+#     
 def deduplicate_publications(publications: list[dict]) -> list[dict]:
-    """
-    Deduplicate publications by `scopus_eid` before writing to the database.
-
-    The same paper can appear multiple times when several SCEM staff members are
-    co-authors, but the public Publications page should keep only one record.
-    """
     unique_publications = {}
 
     for publication in publications:
@@ -222,13 +221,13 @@ def deduplicate_publications(publications: list[dict]) -> list[dict]:
         ),
     )
 
+#
+#     Run one complete Scopus synchronization pass.
+#
+#     This is the main orchestration entry point and returns a compact summary for
+#     the scheduler or any other caller that needs deployment-friendly output.
+#     
 def sync_scopus_dataset(start_year: int = DEFAULT_PUBLICATION_START_YEAR) -> dict:
-    """
-    Run one complete Scopus synchronization pass.
-
-    This is the main orchestration entry point and returns a compact summary for
-    the scheduler or any other caller that needs deployment-friendly output.
-    """
     staff_targets = get_staff_scopus_targets()
     if not staff_targets:
         return {
@@ -279,3 +278,4 @@ def sync_scopus_dataset(start_year: int = DEFAULT_PUBLICATION_START_YEAR) -> dic
         "publication_summary": publication_summary,
         "errors": errors,
     }
+

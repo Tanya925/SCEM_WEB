@@ -19,8 +19,8 @@ from services.admin_service import (
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/0630_SCEMadmin")
 
+# Require login before accessing admin pages.
 def login_required(view_function):
-    """Require login before accessing admin pages."""
     @wraps(view_function)
     def wrapped_view(*args, **kwargs):
         if "user_id" not in session:
@@ -32,8 +32,8 @@ def login_required(view_function):
 
 @admin_bp.route("/dashboard")
 @login_required
+# Render the admin dashboard together with the current user information.
 def dashboard():
-    """Render the admin dashboard together with the current user information."""
     current_user = get_user_by_id(session["user_id"])
     current_username = current_user["username"] if current_user else session.get("username", "User")
     session["username"] = current_username
@@ -44,8 +44,8 @@ def dashboard():
 
 @admin_bp.route("/general-info", methods=["GET", "POST"])
 @login_required
+# Render and process the homepage General Info admin page.
 def general_info():
-    """Render and process the homepage General Info admin page."""
     if request.method == "POST":
         success_message = handle_general_info_submission()
         return render_template("admin/general_info.html", **get_general_info_page_context(success_message))
@@ -54,8 +54,8 @@ def general_info():
 
 @admin_bp.route("/staff", methods=["GET", "POST"])
 @login_required
+# Render and process the staff management page.
 def staff():
-    """Render and process the staff management page."""
     edit_id = request.args.get("edit_id", type=int)
 
     if request.method == "POST":
@@ -72,8 +72,8 @@ def staff():
 
 @admin_bp.route("/passwords", methods=["GET", "POST"])
 @login_required
+# Allow the signed-in administrator to update their own login details.
 def passwords():
-    """Allow the signed-in administrator to update their own login details."""
     if request.method == "POST":
         try:
             requested_username = request.form.get("new_username", "").strip()
@@ -112,8 +112,8 @@ def passwords():
 
 @admin_bp.route("/projects", methods=["GET", "POST"])
 @login_required
+# Render and process the research-project management page.
 def projects():
-    """Render and process the research-project management page."""
     edit_id = request.args.get("edit_id", type=int)
 
     if request.method == "POST":
@@ -127,3 +127,5 @@ def projects():
         )
 
     return render_template("admin/projects.html", **get_projects_page_context(edit_id=edit_id))
+
+

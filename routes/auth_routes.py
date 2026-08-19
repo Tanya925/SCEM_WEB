@@ -31,7 +31,9 @@ def login():
     return render_template("auth/admin_login.html", error_message=error_message)
 
 @auth_bp.route("/logout")
+# Clear the current session and log the user out of the admin interface.
 def logout():
-    """Clear the current session and log the user out of the admin interface."""
     session.clear()
     return redirect(url_for("auth.login"))
+
+

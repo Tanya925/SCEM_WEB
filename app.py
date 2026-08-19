@@ -69,8 +69,8 @@ app = Flask(
 
 # ===== Configuration Helper =====
 # Keep Flask security and session settings together so startup remains easy to follow.
+# Apply the secret key, cookie settings, and database configuration required at startup.
 def configure_app(flask_app):
-    """Apply the secret key, cookie settings, and database configuration required at startup."""
     secret_key = os.environ.get("SECRET_KEY", "").strip()
     if not secret_key:
         raise RuntimeError("SECRET_KEY environment variable is required before starting the app.")
@@ -85,21 +85,21 @@ def configure_app(flask_app):
 # The Flask context processor injects shared data and helper functions into all templates.
 # This keeps presentation-focused logic out of individual route handlers.
 @app.context_processor
+# Register shared helpers that every Jinja template can use directly.
 def inject_template_helpers():
-    """Register shared helpers that every Jinja template can use directly."""
     current_language = session.get("language", "en")
     staff_photo_lookup_cache = None
 
+    # Build the primary field name for the requested language.
     def primary_key(prefix, language):
-        """Build the primary field name for the requested language."""
         return f"{prefix}_{language}"
 
+    # Build the fallback field name for the requested language.
     def fallback_key(prefix, language):
-        """Build the fallback field name for the requested language."""
         return f"{prefix}_{LANGUAGE_FALLBACK.get(language, 'en')}"
 
+    # Normalize null-like display values into a safe empty string.
     def normalize_display_text(value):
-        """Normalize null-like display values into a safe empty string."""
         if value is None:
             return ""
 
@@ -109,15 +109,15 @@ def inject_template_helpers():
 
         return cleaned_value
 
+    # Safely read a field value and return an empty string when it is missing.
     def row_value(data, key):
-        """Safely read a field value and return an empty string when it is missing."""
         try:
             return normalize_display_text(data[key])
         except (KeyError, TypeError, IndexError):
             return ""
 
+    # Read a multilingual field and fall back to the alternate language when needed.
     def field_text(data, field_name):
-        """Read a multilingual field and fall back to the alternate language when needed."""
         if data is None:
             return ""
 
@@ -125,8 +125,8 @@ def inject_template_helpers():
         fallback_value = row_value(data, fallback_key(field_name, current_language))
         return preferred_value or fallback_value
 
+    # Convert long homepage text into titled sections for rendering.
     def format_general_content(raw_text):
-        """Convert long homepage text into titled sections for rendering."""
         if not raw_text:
             return []
 
@@ -149,8 +149,8 @@ def inject_template_helpers():
 
         return sections
 
+    # Return the fixed homepage image that matches the given section title.
     def overview_image_for_title(title):
-        """Return the fixed homepage image that matches the given section title."""
         normalized_title = " ".join(normalize_display_text(title).lower().split())
         if not normalized_title:
             return None
@@ -161,8 +161,8 @@ def inject_template_helpers():
 
         return image_options.get(current_language) or image_options.get("en")
 
+    # Split multiline text into a list that excludes blank rows.
     def text_lines(raw_text):
-        """Split multiline text into a list that excludes blank rows."""
         return [
             cleaned_line
             for cleaned_line in (
@@ -172,8 +172,8 @@ def inject_template_helpers():
             if cleaned_line
         ]
 
+    # Parse freeform people text into structured heading and person entries.
     def parse_people_entries(raw_text):
-        """Parse freeform people text into structured heading and person entries."""
         entries = []
 
         for raw_line in str(raw_text or "").splitlines():
@@ -206,8 +206,8 @@ def inject_template_helpers():
 
         return entries
 
+    # Use the explicit photo filename first, otherwise fall back to the staff record photo.
     def photo_for_person(name, override_filename=""):
-        """Use the explicit photo filename first, otherwise fall back to the staff record photo."""
         nonlocal staff_photo_lookup_cache
 
         if override_filename:
@@ -226,12 +226,12 @@ def inject_template_helpers():
 
         return ""
 
+    # Build the full Scopus profile URL for a staff record.
     def staff_scopus_url(staff):
-        """Build the full Scopus profile URL for a staff record."""
         return build_staff_scopus_url(staff)
 
+    # Prepare multi-person project fields and photos for direct template rendering.
     def project_people_entries(project, field_name):
-        """Prepare multi-person project fields and photos for direct template rendering."""
         raw_text = field_text(project, field_name)
         photo_filenames = row_value(project, f"{field_name}_photos_json")
         parsed_filenames = parse_project_member_photo_list(photo_filenames)
@@ -254,8 +254,8 @@ def inject_template_helpers():
 
         return entries
 
+    # Parse custom project team fields and attach photo information when possible.
     def project_custom_team_fields(project):
-        """Parse custom project team fields and attach photo information when possible."""
         entries = []
 
         for field in parse_project_custom_fields(row_value(project, "custom_team_fields_json")):
@@ -273,8 +273,8 @@ def inject_template_helpers():
 
         return entries
 
+    # Parse custom project detail fields for direct template rendering.
     def project_custom_detail_fields(project):
-        """Parse custom project detail fields for direct template rendering."""
         entries = []
 
         for field in parse_project_custom_fields(row_value(project, "custom_detail_fields_json")):
@@ -308,8 +308,8 @@ def inject_template_helpers():
 
 # ===== Database Startup Checks =====
 # Test whether SQLite can be opened before the app starts.
+# Check whether the current database file can be opened successfully.
 def test_db_connection():
-    """Check whether the current database file can be opened successfully."""
     try:
         connection = get_db_connection()
         connection.close()
@@ -318,8 +318,8 @@ def test_db_connection():
         print(f"Database connection failed: {error}")
         return False
 
+# Return whether the database is missing required application tables.
 def is_database_empty():
-    """Return whether the database is missing required application tables."""
     if not DATABASE_PATH.exists():
         return True
 
@@ -347,8 +347,8 @@ def is_database_empty():
 
     return not required_tables.issubset(existing_tables)
 
+# Initialize an empty database by applying schema.sql.
 def initialize_database_if_empty():
-    """Initialize an empty database by applying schema.sql."""
     if not is_database_empty():
         return False
 
@@ -362,8 +362,8 @@ def initialize_database_if_empty():
 
     return True
 
+# Verify that required tables and seed data exist before startup.
 def ensure_database_ready():
-    """Verify that required tables and seed data exist before startup."""
     if not test_db_connection():
         return False
 
@@ -399,3 +399,5 @@ if __name__ == "__main__":
         print("SQLite database connection failed. Please verify that scem.db exists.")
 
     app.run(port=3000, debug=False)
+
+

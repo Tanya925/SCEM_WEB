@@ -1,11 +1,10 @@
-# 主要用途：管理前台公開論文資料，以及 Scopus 同步寫入流程。
+# Main purpose: manage public publication records and the Scopus synchronization write flow.
+
+from .common import fetch_all, get_db_connection  # Shared database helper functions.
 
 
-from .common import fetch_all, get_db_connection  # 共用資料庫輔助函式。
-
-
-# 論文資料表中，前台論文頁實際使用的欄位。
-# Scopus 同步流程會把抓回來的論文資料整理成這組固定欄位後再寫入 SQLite。
+# Frontend publication fields actually used by the public Publications page.
+# The Scopus sync flow reshapes incoming publication data into this stable column set before writing to SQLite.
 PUBLICATION_FORM_COLUMNS = (
     "title",
     "authors",
@@ -18,10 +17,10 @@ PUBLICATION_FORM_COLUMNS = (
     "pdf_url",
 )
 
-# ===== 資料表初始化 =====
-# 這些函式會在操作資料表前先執行，避免資料表不存在時讓網站出錯。
+# ===== Table Initialization =====
+# Run these helpers before table operations so the app does not break when the table is missing.
+# Create the publications table if it does not exist.
 def ensure_publications_table() -> None:
-    """如果 publications 資料表不存在，就先建立它。"""
     connection = get_db_connection()
     try:
         connection.execute(
@@ -49,8 +48,8 @@ def ensure_publications_table() -> None:
         connection.close()
 
 
+# Add newer publication columns required by the Scopus sync flow.
 def ensure_publications_table_columns(connection) -> None:
-    """補上 Scopus 同步流程需要的較新論文欄位。"""
     existing_columns = {
         row["name"]
         for row in connection.execute("PRAGMA table_info(publications)").fetchall()
@@ -73,10 +72,10 @@ def ensure_publications_table_columns(connection) -> None:
     )
 
 
-# ===== 前台共用查詢 =====
-# 取得整個網站前台共用的完整論文列表。
+# ===== Shared Queries for the Public Site =====
+# Fetch the complete publication list used across the public-facing site.
+# Fetch the complete public publication list.
 def get_all_publications():
-    """取得前台使用的完整公開論文列表。"""
     ensure_publications_table()
     rows = fetch_all(
         """
@@ -97,20 +96,22 @@ def get_all_publications():
         """
     )
     return [dict(row) for row in rows]
+
+
+#
+#     Write the synchronized Scopus publication list back into the publications table.
+#
+#     This function handles more than just inserts:
+#     1. Refresh existing rows with the same scopus_eid
+#     2. Adopt older manually imported rows when they are actually the same paper
+#     3. Remove outdated Scopus-managed rows that no longer appear in the latest sync result
+#
+#     This keeps the public Publications page consistent:
+#     - each paper appears only once
+#     - older rows can be taken over by official Scopus identifiers
+#     - the database does not retain stale synchronized publications
+#     
 def sync_scopus_publications(publications):
-    """
-    將 Scopus 同步回來的論文清單寫回 publications 表。
-
-    這個函式的重點不只是「新增」資料，還包含三種情況：
-    1. 同 scopus_eid 的既有論文：直接更新
-    2. 舊手動資料但其實是同一篇論文：接管那一筆舊資料並補上 scopus_eid
-    3. 這次同步清單裡已不存在的舊 Scopus 記錄：移除
-
-    這樣前台 Publications 頁面才能維持：
-    - 同一篇論文只出現一次
-    - 舊資料逐步被正式的 Scopus 識別碼接手
-    - 資料庫不會殘留不再屬於同步結果的舊論文
-    """
     ensure_publications_table()
     connection = get_db_connection()
     inserted_count = 0
@@ -128,7 +129,7 @@ def sync_scopus_publications(publications):
         seen_eids = set()
 
         for publication in publications:
-            # 每篇論文一定要有 scopus_eid，這是整個同步去重與更新的核心鍵值。
+            # Every publication must have scopus_eid because it is the core key for sync deduping and refreshes.
             scopus_eid = str(publication.get("scopus_eid", "") or "").strip()
             if not scopus_eid or scopus_eid in seen_eids:
                 continue
@@ -147,7 +148,7 @@ def sync_scopus_publications(publications):
             ).fetchone()
 
             if existing_row:
-                # 若資料庫中已經有相同 scopus_eid，代表就是同一篇論文，直接刷新內容即可。
+                # If the same scopus_eid already exists, it is the same paper, so refresh the record in place.
                 assignments = ", ".join(f"{column} = ?" for column in PUBLICATION_FORM_COLUMNS)
                 connection.execute(
                     f"""
@@ -177,8 +178,8 @@ def sync_scopus_publications(publications):
                 (payload["title"], payload["pdf_url"]),
             ).fetchone()
             if duplicate_row:
-                # 若沒有相同 scopus_eid，但標題或 URL 對得上，
-                # 通常代表這篇論文早年曾經手動匯入，現在改由 Scopus 正式接管。
+                # If the EID is new but the title or URL already matches,
+                # this is usually an older manually imported row now being adopted by Scopus.
                 existing_url = str(duplicate_row["pdf_url"] or "").strip()
                 incoming_url = str(payload["pdf_url"] or "").strip()
                 use_existing_url = bool(existing_url) and (
@@ -231,8 +232,8 @@ def sync_scopus_publications(publications):
             inserted_count += 1
 
         if active_eids:
-            # 本次同步後，凡是不在 active_eids 中、卻仍有 scopus_eid 的資料，
-            # 代表它已經不屬於目前同步結果，應該移除以保持資料一致。
+            # After this sync, any row that still has scopus_eid but is missing from active_eids
+            # no longer belongs to the current sync result and should be removed for consistency.
             placeholders = ", ".join("?" for _ in active_eids)
             connection.execute(
                 f"""

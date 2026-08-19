@@ -178,3 +178,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         visibleText.textContent = "0";
     }
 });
+
+

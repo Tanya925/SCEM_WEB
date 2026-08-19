@@ -21,8 +21,8 @@ def authenticate_user(username, password):
 
     return user
 
+# Update the administrator username, password, or both from the Set Up page.
 def change_user_credentials(user_id, current_password, new_username, new_password, confirm_password):
-    """Update the administrator username, password, or both from the Set Up page."""
     user = get_user_by_id(user_id)
     if user is None or not check_password_hash(user["password_hash"], current_password or ""):
         raise PasswordChangeError("Current password is incorrect.")
@@ -46,3 +46,5 @@ def change_user_credentials(user_id, current_password, new_username, new_passwor
         raise PasswordChangeError("Please change the username, password, or both before saving.")
 
     update_user_credentials(user_id, cleaned_username, password_hash_to_store)
+
+

@@ -20,8 +20,8 @@ public_bp = Blueprint("public", __name__)
 # Switch the public-site language.
 # Only en and th are supported, and the selection is stored in session across pages.
 @public_bp.route("/language/<lang_code>")
+# Switch the public-site language and return to the source page or homepage.
 def change_language(lang_code):
-    """Switch the public-site language and return to the source page or homepage."""
     if lang_code not in {"en", "th"}:
         lang_code = "en"
 
@@ -35,8 +35,8 @@ def change_language(lang_code):
 
 # Homepage: show the unit introduction, activity images, and research highlights.
 @public_bp.route("/")
+# Render the website homepage.
 def index():
-    """Render the website homepage."""
     return render_template(
         "public/index.html",
         **get_homepage_context(),
@@ -44,8 +44,8 @@ def index():
 
 # Staff page: show grouped people data and filter options.
 @public_bp.route("/staff")
+# Render the public staff page.
 def staff():
-    """Render the public staff page."""
     return render_template(
         "public/staff.html",
         **get_staff_page_context(),
@@ -53,30 +53,32 @@ def staff():
 
 # Research page: show ongoing and finished project lists.
 @public_bp.route("/research")
+# Render the public research listing page.
 def research():
-    """Render the public research listing page."""
     return render_template("public/research.html", **get_research_page_context())
 
 # Publications page: the page shell loads data from the public API on the client side.
 @public_bp.route("/publications")
+# Render the public publications shell; the client loads the data from the API.
 def publications():
-    """Render the public publications shell; the client loads the data from the API."""
     return render_template("public/publications.html")
 
 # Public publications endpoint: return all publication records in database order.
 @public_bp.route("/api/publications")
+# Return the JSON data used by the public publications page.
 def publication_data():
-    """Return the JSON data used by the public publications page."""
     return jsonify(get_all_publications())
 
 # Single research project detail page.
 # Only ongoing projects have a public detail page.
 @public_bp.route("/project/<int:project_id>")
+# Render the detail page for one public ongoing project.
 def project_detail(project_id):
-    """Render the detail page for one public ongoing project."""
     project = get_public_project_detail(project_id)
 
     if project is None:
         abort(404)
 
     return render_template("public/project_detail.html", project=project)
+
+

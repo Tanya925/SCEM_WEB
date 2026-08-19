@@ -39,14 +39,14 @@ PDF_EXTENSIONS = {"pdf"}  # Allowed PDF extensions.
 AUDIO_EXTENSIONS = {"mp3", "m4a", "wav", "ogg", "aac"}   # Allowed audio extensions.
 
 # Read a text form field and trim surrounding whitespace.
+# Read a text form field and strip surrounding whitespace.
 def text_form_value(field_name, default=""):
-    """Read a text form field and strip surrounding whitespace."""
     return request.form.get(field_name, default).strip()
 
 # Shared helper for saving uploaded files.
 # It validates the extension, normalizes the filename, and overwrites an existing file with the same name.
+# Validate the extension and save an uploaded file, returning the saved filename.
 def save_uploaded_file(uploaded_file, folder_name, allowed_extensions):
-    """Validate the extension and save an uploaded file, returning the saved filename."""
     if not uploaded_file or not uploaded_file.filename:
         return ""
 
@@ -65,8 +65,8 @@ def save_uploaded_file(uploaded_file, folder_name, allowed_extensions):
     return saved_filename
 
 # Reuse the existing staff photo filename when no new file is uploaded.
+# Keep the existing filename when no replacement file is uploaded.
 def resolve_uploaded_filename(file_field_name, existing_filename=""):
-    """Keep the existing filename when no replacement file is uploaded."""
     uploaded_filename = save_uploaded_file(
         request.files.get(file_field_name),
         "uploads",
@@ -75,8 +75,8 @@ def resolve_uploaded_filename(file_field_name, existing_filename=""):
     return uploaded_filename or existing_filename
 
 # Build the admin editing structure for bilingual project-member names and photo lists.
+# Convert stored project member names and photos into form-ready entry data.
 def build_project_member_entries(project, field_name):
-    """Convert stored project member names and photos into form-ready entry data."""
     if not project:
         return []
 
@@ -106,8 +106,8 @@ def build_project_member_entries(project, field_name):
 
 # Normalize Researchers / Engineers / Assistants style form fields into one shared structure.
 # This keeps route handlers from repeating nearly identical logic for each group.
+# Collect multi-person field data into a normalized name-and-photo list.
 def collect_project_member_entries(field_prefix):
-    """Collect multi-person field data into a normalized name-and-photo list."""
     names_en = request.form.getlist(f"{field_prefix}_name_en[]")
     names_th = request.form.getlist(f"{field_prefix}_name_th[]")
     existing_photos = request.form.getlist(f"{field_prefix}_existing_photo[]")
@@ -133,8 +133,8 @@ def collect_project_member_entries(field_prefix):
     return member_entries
 
 # Convert multi-person field data back into the newline-delimited text format stored in the database.
+# Convert member entries back into the multiline text format used in storage.
 def build_member_names_text(entries, language):
-    """Convert member entries back into the multiline text format used in storage."""
     lines = []
 
     for entry in entries:
@@ -148,8 +148,8 @@ def build_member_names_text(entries, language):
     return "\n".join(lines)
 
 # Collect the form data for custom single-person team fields.
+# Collect bilingual text and photo data for custom team fields.
 def collect_custom_team_fields():
-    """Collect bilingual text and photo data for custom team fields."""
     labels_en = request.form.getlist("custom_team_label_en[]")
     labels_th = request.form.getlist("custom_team_label_th[]")
     values_en = request.form.getlist("custom_team_value_en[]")
@@ -188,8 +188,8 @@ def collect_custom_team_fields():
     return custom_team_fields
 
 # Collect the form data for custom general-detail fields.
+# Collect bilingual text data for custom detail fields.
 def collect_custom_detail_fields():
-    """Collect bilingual text data for custom detail fields."""
     labels_en = request.form.getlist("custom_detail_label_en[]")
     labels_th = request.form.getlist("custom_detail_label_th[]")
     values_en = request.form.getlist("custom_detail_value_en[]")
@@ -215,8 +215,8 @@ def collect_custom_detail_fields():
     return custom_detail_fields
 
 # Build all initial dynamic-field data for the project editing page in one place.
+# Prepare all dynamic-field seed data required by the project editing page.
 def get_project_editing_context(project):
-    """Prepare all dynamic-field seed data required by the project editing page."""
     if not project:
         return {
             "editing_researchers": [],
@@ -235,8 +235,8 @@ def get_project_editing_context(project):
     }
 
 # Base context for the General Info admin page.
+# Provide the data required by the General Info admin template.
 def get_general_info_page_context(success_message=None):
-    """Provide the data required by the General Info admin template."""
     return {
         "general_info": get_general_info(),
         "activity_images": get_home_activity_images(),
@@ -244,8 +244,8 @@ def get_general_info_page_context(success_message=None):
     }
 
 # Handle the General Info form, including text updates and activity image management.
+# Handle homepage text updates and activity image create/delete actions.
 def handle_general_info_submission():
-    """Handle homepage text updates and activity image create/delete actions."""
     action = request.form.get("form_action", "save_text").strip()
 
     if action == "add_activity_image":
@@ -281,8 +281,8 @@ def handle_general_info_submission():
     return "General Info saved successfully."
 
 # Base context for the Staff admin page.
+# Provide the data required by the Staff admin template.
 def get_staff_page_context(edit_id=None, success_message=None):
-    """Provide the data required by the Staff admin template."""
     editing_staff = get_staff_by_id(edit_id) if edit_id else None
     return {
         "staff_list": get_all_staff(),
@@ -291,8 +291,8 @@ def get_staff_page_context(edit_id=None, success_message=None):
     }
 
 # Handle the Staff form, including create/update/delete actions and related file uploads.
+# Handle Staff create/update/delete actions and related file uploads.
 def handle_staff_submission():
-    """Handle Staff create/update/delete actions and related file uploads."""
     form_action = request.form.get("form_action", "save_staff").strip()
 
     if form_action == "delete_staff":
@@ -385,8 +385,8 @@ def handle_staff_submission():
     }
 
 # Base context for the Projects admin page, including the list and any project being edited.
+# Provide the data required by the Projects admin template.
 def get_projects_page_context(edit_id=None, success_message=None, editing_project_override=None):
-    """Provide the data required by the Projects admin template."""
     editing_project = editing_project_override if editing_project_override is not None else (
         get_project_by_id(edit_id) if edit_id else None
     )
@@ -399,8 +399,8 @@ def get_projects_page_context(edit_id=None, success_message=None, editing_projec
     return page_context
 
 # Handle the Projects form, including full CRUD and dynamic person-field processing.
+# Handle Project create/update/delete actions and dynamic field normalization.
 def handle_projects_submission():
-    """Handle Project create/update/delete actions and dynamic field normalization."""
     form_action = request.form.get("form_action", "save_project").strip()
 
     if form_action == "delete_project":
@@ -542,3 +542,5 @@ def handle_projects_submission():
         "success_message": success_message,
         "editing_project": None,
     }
+
+
