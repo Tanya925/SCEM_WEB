@@ -1,121 +1,121 @@
-# SCEM Website
+# SCEM 網站專案
 
-This repository contains the current SCEM website and its Scopus synchronization workflow.
+這個專案包含目前的 SCEM 網站，以及用來同步 Scopus 論文與 h-index 的自動化流程。
 
-The project has two main parts:
+目前專案主要分成兩個部分：
 
-- `Website application`
-  - Public-facing pages and the admin back office
-- `Scopus synchronization`
-  - Uses the Scopus and SciVal APIs together with Flask-APScheduler to update staff h-index values and publication records
+- `網站主程式`
+  - 包含前台頁面與後台管理介面
+- `Scopus 同步功能`
+  - 透過 Scopus / SciVal API 與 `Flask-APScheduler`，自動更新教師 h-index 與論文資料
 
 ---
 
-## 1. Key Files
+## 1. 重要檔案
 
 - `app.py`
-  - Main Flask application entry point
+  - Flask 應用程式主入口
 - `services/scopus_sync_service.py`
-  - Calls the Scopus APIs and synchronizes h-index values and publication data
+  - 負責呼叫 Scopus API 並同步 h-index 與論文資料
 - `services/scopus_scheduler.py`
-  - Starts Flask-APScheduler and runs the scheduled Scopus synchronization job
+  - 啟動 `Flask-APScheduler`，定期執行 Scopus 同步工作
 - `database/`
-  - Database access helpers and startup migration logic
+  - 資料庫存取函式與啟動時的資料表補齊邏輯
 - `routes/`
-  - Public, authentication, admin, and publications API routes
+  - 前台、登入、後台與論文 API 路由
 - `templates/`
-  - HTML templates
+  - HTML 模板檔
 - `static/`
-  - CSS, JavaScript, images, audio, PDF files, and uploaded assets
+  - CSS、JavaScript、圖片、音訊、PDF 與上傳資源
 - `schema.sql`
-  - Base schema and seed data used to initialize an empty database
+  - 初始化空資料庫用的資料表結構與預設資料
 - `scem.db`
-  - Active SQLite database file
+  - 目前使用中的 SQLite 資料庫
 - `.env`
-  - Local environment settings such as `SECRET_KEY`, `SCOPUS_API_KEY`, and scheduler options
+  - 本機環境設定，例如 `SECRET_KEY`、`SCOPUS_API_KEY` 與排程參數
 - `Dockerfile`
-  - Docker image build configuration using `gunicorn` as the web server
+  - 使用 `gunicorn` 啟動網站的 Docker 建置設定
 - `docker-compose.yml`
-  - Docker runtime configuration, including ports, `.env`, `scem.db`, and `static/uploads`
+  - Docker 執行設定，包含連接埠、`.env`、`scem.db` 與 `static/uploads`
 
 ---
 
-## 2. Environment Setup
+## 2. 環境設定
 
-### 2.1 Install Dependencies
+### 2.1 安裝套件
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-Primary packages used by this project:
+本專案主要使用的套件如下：
 
 - `Flask`
 - `Flask-APScheduler`
 - `python-dotenv`
 - `gunicorn`
 
-### 2.2 Configure `.env`
+### 2.2 設定 `.env`
 
-Create a `.env` file in the project root:
+請在專案根目錄建立 `.env` 檔案：
 
 ```env
-SECRET_KEY=replace-with-your-own-secret
-SCOPUS_API_KEY=replace-with-your-scopus-key
+SECRET_KEY=請替換成你自己的密鑰
+SCOPUS_API_KEY=請填入你的 Scopus API 金鑰
 SCOPUS_SYNC_INTERVAL_MINUTES=1440
 WEB_CONCURRENCY=1
 ```
 
-Field descriptions:
+欄位說明：
 
 - `SECRET_KEY`
-  - Secret key used for Flask sessions
+  - Flask session 使用的密鑰
 - `SCOPUS_API_KEY`
-  - API key for Scopus / SciVal requests
+  - Scopus / SciVal API 使用的金鑰
 - `SCOPUS_SYNC_INTERVAL_MINUTES`
-  - Interval, in minutes, for the automatic synchronization job
+  - 自動同步工作的執行間隔，單位為分鐘
 - `WEB_CONCURRENCY`
-  - Number of web workers. Keep this project at `1` unless the scheduler is moved out of process.
+  - 網站 worker 數量。若排程仍與網站跑在同一個 process，請維持 `1`
 
 ---
 
-## 3. Running the Website
+## 3. 啟動網站
 
-### 3.1 Run Locally
+### 3.1 本機啟動
 
 ```powershell
 python app.py
 ```
 
-Default local URL:
+預設本機網址：
 
 ```text
 http://127.0.0.1:3000
 ```
 
-Typical startup output:
+常見啟動輸出：
 
 ```text
-Scopus scheduler started.
-SQLite database connection succeeded.
-In-process Scopus scheduler is running.
+Scopus 排程器已啟動。
+SQLite 資料庫連線成功。
+目前這個程序中的 Scopus 排程器正在執行。
 ```
 
-### 3.2 Run with Docker
+### 3.2 使用 Docker 啟動
 
-Build the image:
+建置映像：
 
 ```powershell
 docker compose build
 ```
 
-Start the container:
+啟動容器：
 
 ```powershell
 docker compose up -d
 ```
 
-If you change Python code, templates, or CSS, rebuild before restarting because the entire project directory is not bind-mounted into the container:
+如果你修改了 Python、模板或 CSS，因為整個專案目錄沒有完整掛載進容器，所以建議重新建置後再啟動：
 
 ```powershell
 docker compose down
@@ -123,137 +123,137 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-Docker currently preserves:
+Docker 目前會保留：
 
 - `scem.db`
 - `static/uploads`
 
 ---
 
-## 4. Website Structure
+## 4. 網站結構
 
-### 4.1 Public Pages
+### 4.1 前台頁面
 
 - `/`
-  - Homepage
+  - 首頁
 - `/staff`
-  - Staff page
+  - 團隊成員頁
 - `/research`
-  - Research projects page
+  - 研究計畫頁
 - `/publications`
-  - Publications page
+  - 論文頁
 - `/project/<id>`
-  - Detail page for a single ongoing project
+  - 單一進行中計畫的詳細頁
 - `/api/publications`
-  - JSON API used by the publications page
+  - 論文頁使用的 JSON API
 
-### 4.2 Admin Pages
+### 4.2 後台頁面
 
-All admin pages currently live under:
+目前所有後台頁面都在：
 
 ```text
 /0630_SCEMadmin
 ```
 
-Available admin pages:
+可用的後台頁面如下：
 
 - `/0630_SCEMadmin/login`
-  - Administrator login
+  - 管理員登入頁
 - `/0630_SCEMadmin/dashboard`
-  - Admin dashboard
+  - 管理首頁
 - `/0630_SCEMadmin/general-info`
-  - Homepage text and activity image management
+  - 首頁文字與活動圖片管理
 - `/0630_SCEMadmin/staff`
-  - Staff data management
+  - 團隊成員資料管理
 - `/0630_SCEMadmin/projects`
-  - Research project management
+  - 研究計畫管理
 - `/0630_SCEMadmin/passwords`
-  - Administrator credential update page
+  - 管理員帳號與密碼設定
 
-Only a single administrator account is currently supported.
+目前系統只支援單一管理員帳號。
 
 ---
 
-## 5. Administrator Login Flow
+## 5. 管理員登入與帳密調整
 
-The application seeds a single built-in administrator account when the database is first created.
+資料庫第一次建立時，系統會先建立一組內建管理員帳號。
 
-If the administrator wants to change the login later, they can do it directly from:
+如果之後要修改登入帳號或密碼，可直接到：
 
 - `/0630_SCEMadmin/passwords`
 
-Rules:
+調整規則如下：
 
-- The new username must be unique
-- The current password is required before saving changes
-- The new password must contain at least 8 characters
-- The new password must differ from the current password
-
----
-
-## 6. Scopus Synchronization
-
-The old browser crawler, manual publication review flow, and manual sync page have been removed.
-
-Current synchronization flow:
-
-1. Read all staff records that have a `scopus_author_id`
-2. Call the Scopus / SciVal APIs
-3. Update `staff.scopus_hindex`
-4. Update `staff.scopus_hindex_updated_at`
-5. Import publications from 2020 onward
-6. Deduplicate by `scopus_eid`
-7. Write results into the `publications` table
-8. Update `publications.scopus_last_updated_at`
-
-### 6.1 Scheduler Behavior
-
-The scheduler starts automatically whenever the website starts successfully.
-
-Its interval is controlled by `SCOPUS_SYNC_INTERVAL_MINUTES`.
-
-The application also keeps the multi-worker safeguard:
-
-- If `WEB_CONCURRENCY > 1`
-  - The scheduler does not start by default
-- This avoids duplicate synchronization runs across multiple workers
-
-### 6.2 Publication URL Selection Rules
-
-Each publication shown on the public site uses the first available URL in this order:
-
-1. DOI URL
-2. Scopus URL
-3. Fallback URL returned by the API
-
-If an existing record already has a better non-Scopus URL, the synchronization logic tries to preserve it.
+- 新帳號不得與現有帳號重複
+- 儲存前必須先輸入目前密碼
+- 新密碼至少要 8 個字元
+- 新密碼不得與目前密碼相同
 
 ---
 
-## 7. Database Notes
+## 6. Scopus 同步流程
 
-Primary tables in use:
+舊版的瀏覽器爬蟲、人工論文審核流程，以及手動同步頁面都已經移除。
+
+目前同步流程如下：
+
+1. 讀取所有有填寫 `scopus_author_id` 的教師資料
+2. 呼叫 Scopus / SciVal API
+3. 更新 `staff.scopus_hindex`
+4. 更新 `staff.scopus_hindex_updated_at`
+5. 匯入 2020 年以後的論文
+6. 依 `scopus_eid` 去重
+7. 將結果寫入 `publications` 資料表
+8. 更新 `publications.scopus_last_updated_at`
+
+### 6.1 排程行為
+
+網站成功啟動後，排程器會自動啟動。
+
+執行間隔由 `SCOPUS_SYNC_INTERVAL_MINUTES` 控制。
+
+系統保留多 worker 防呆機制：
+
+- 當 `WEB_CONCURRENCY > 1`
+  - 預設不啟動排程器
+- 這樣可以避免多個 worker 同時重複執行同步
+
+### 6.2 論文連結選擇規則
+
+前台顯示每篇論文時，會依照以下順序選擇連結：
+
+1. DOI 網址
+2. Scopus 網址
+3. API 回傳的備援網址
+
+如果資料庫原本已經有較好的非 Scopus 連結，同步邏輯會盡量保留。
+
+---
+
+## 7. 資料庫備註
+
+目前主要使用的資料表：
 
 - `users`
-  - Administrator account and forced password-change state
+  - 管理員帳號資料
 - `general_info`
-  - Homepage text content
+  - 首頁文字內容
 - `home_activity_images`
-  - Homepage activity images
+  - 首頁活動圖片
 - `staff`
-  - Staff data including Scopus author IDs and h-index values
+  - 團隊成員資料，包含 Scopus Author ID 與 h-index
 - `research_projects`
-  - Research project data
+  - 研究計畫資料
 - `publications`
-  - Public publication records synchronized from Scopus
+  - 由 Scopus 同步而來的公開論文資料
 
-Additional notes:
+其他說明：
 
-- `finished` research projects are currently presented as list-only public entries
-- In practice, `finished` project records are kept with title and year fields for public display and search
-- Detailed public project pages are currently available only for `ongoing` projects
+- `finished` 類型的研究計畫目前只在前台列表顯示
+- 實務上 `finished` 計畫仍會保留標題與年份供前台展示與搜尋
+- 目前只有 `ongoing` 類型的計畫提供前台詳細頁
 
-Important Scopus-related columns:
+重要的 Scopus 相關欄位：
 
 - `staff.scopus_author_id`
 - `staff.scopus_hindex`
@@ -261,32 +261,31 @@ Important Scopus-related columns:
 - `publications.scopus_eid`
 - `publications.scopus_last_updated_at`
 
-Migration notes:
+目前程式假設資料庫已使用現行結構：
 
-- `publications.source_type` is no longer used
-- If an older database still contains that column, startup migration removes it automatically
-- Legacy contributor accounts are also cleaned up so the project keeps a single-admin structure
+- `users` 採用單一管理員模式
+- `publications` 使用 `scopus_eid` 與 `scopus_last_updated_at` 作為同步識別與更新依據
 
 ---
 
-## 8. Current Maintenance Scope
+## 8. 目前維護範圍
 
-Still maintained manually in the admin back office:
+目前仍需在後台手動維護：
 
-- Homepage content
-- Staff data
-- Research project data
-- Uploaded images and related static files
+- 首頁內容
+- 團隊成員資料
+- 研究計畫資料
+- 上傳圖片與相關靜態檔案
 
-Maintained automatically by the system:
+目前由系統自動維護：
 
-- Staff h-index values
-- Publications from 2020 onward
+- 教師 h-index
+- 2020 年以後的論文資料
 
-No longer part of this project:
+目前已不再屬於本專案的功能：
 
-- Playwright crawler
-- Windows Task Scheduler `.bat` scripts
-- Separate faculty / researcher login accounts
-- Publication request and approval flow
-- Manual publication management page
+- Playwright 爬蟲
+- Windows 工作排程 `.bat` 腳本
+- 教師 / 研究人員分帳號登入
+- 論文申請與審核流程
+- 手動論文管理頁
