@@ -59,11 +59,79 @@ def ensure_publications_table_columns(connection) -> None:
         connection.execute(
             "ALTER TABLE publications ADD COLUMN scopus_eid TEXT NOT NULL DEFAULT ''"
         )
-    if "scopus_last_updated_at" not in existing_columns:
-        connection.execute(
-            "ALTER TABLE publications ADD COLUMN scopus_last_updated_at TEXT"
-        )
 
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_publications_scopus_eid
+        ON publications(scopus_eid)
+        """
+    )
+
+    if "scopus_last_updated_at" in existing_columns:
+        rebuild_publications_table_without_scopus_timestamp(connection)
+
+
+# Rebuild the publications table to remove the old scopus_last_updated_at column.
+def rebuild_publications_table_without_scopus_timestamp(connection) -> None:
+    connection.execute("DROP TABLE IF EXISTS publications__new")
+    connection.execute(
+        """
+        CREATE TABLE publications__new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_order INTEGER NOT NULL DEFAULT 0,
+            title TEXT NOT NULL,
+            authors TEXT NOT NULL DEFAULT '',
+            journal TEXT NOT NULL DEFAULT '',
+            publication_year INTEGER,
+            volume TEXT NOT NULL DEFAULT '',
+            issue TEXT NOT NULL DEFAULT '',
+            article_number TEXT NOT NULL DEFAULT '',
+            page TEXT NOT NULL DEFAULT '',
+            pdf_url TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            scopus_eid TEXT NOT NULL DEFAULT ''
+        )
+        """
+    )
+    connection.execute(
+        """
+        INSERT INTO publications__new (
+            id,
+            source_order,
+            title,
+            authors,
+            journal,
+            publication_year,
+            volume,
+            issue,
+            article_number,
+            page,
+            pdf_url,
+            created_at,
+            updated_at,
+            scopus_eid
+        )
+        SELECT
+            id,
+            source_order,
+            title,
+            authors,
+            journal,
+            publication_year,
+            volume,
+            issue,
+            article_number,
+            page,
+            pdf_url,
+            created_at,
+            updated_at,
+            COALESCE(scopus_eid, '')
+        FROM publications
+        """
+    )
+    connection.execute("DROP TABLE publications")
+    connection.execute("ALTER TABLE publications__new RENAME TO publications")
     connection.execute(
         """
         CREATE INDEX IF NOT EXISTS idx_publications_scopus_eid
@@ -73,7 +141,6 @@ def ensure_publications_table_columns(connection) -> None:
 
 
 # ===== Shared Queries for the Public Site =====
-# Fetch the complete publication list used across the public-facing site.
 # Fetch the complete public publication list.
 def get_all_publications():
     ensure_publications_table()
@@ -155,7 +222,6 @@ def sync_scopus_publications(publications):
                     UPDATE publications
                     SET {assignments},
                         scopus_eid = ?,
-                        scopus_last_updated_at = DATETIME('now', '+7 hours'),
                         updated_at = DATETIME('now', '+7 hours')
                     WHERE id = ?
                     """,
@@ -197,7 +263,6 @@ def sync_scopus_publications(publications):
                     UPDATE publications
                     SET {assignments},
                         scopus_eid = ?,
-                        scopus_last_updated_at = DATETIME('now', '+7 hours'),
                         updated_at = DATETIME('now', '+7 hours')
                     WHERE id = ?
                     """,
@@ -218,7 +283,7 @@ def sync_scopus_publications(publications):
                     source_order,
                     {column_sql},
                     scopus_eid,
-                    scopus_last_updated_at
+                    updated_at
                 )
                 VALUES (?, {placeholders}, ?, DATETIME('now', '+7 hours'))
                 """,

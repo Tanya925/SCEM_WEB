@@ -1,11 +1,4 @@
-# Main responsibilities:
-# 1. Build the SCEM Flask application.
-# 2. Configure session and security-related settings.
-# 3. Initialize core tables, seed data, and the administrator account.
-# 4. Register the public, auth, and admin routes.
-# 5. Provide shared template helpers.
-# 6. Check and initialize the database at startup.
-# 7. Start the web server.
+# Main purpose: build the SCEM Flask application, initialize the database and shared helpers, and register the public and admin routes.
 
 # ===== Imports =====
 import os  # Read operating-system information and environment variables.
@@ -68,7 +61,6 @@ app = Flask(
 )
 
 # ===== Configuration Helper =====
-# Keep Flask security and session settings together so startup remains easy to follow.
 # Apply the secret key, cookie settings, and database configuration required at startup.
 def configure_app(flask_app):
     secret_key = os.environ.get("SECRET_KEY", "").strip()
@@ -82,8 +74,7 @@ def configure_app(flask_app):
     flask_app.config["DATABASE"] = str(DATABASE_PATH)
 
 # ===== Template Helpers =====
-# The Flask context processor injects shared data and helper functions into all templates.
-# This keeps presentation-focused logic out of individual route handlers.
+# The Flask context processor injects shared data and helper functions into all templates so route handlers stay focused on requests and responses.
 @app.context_processor
 # Register shared helpers that every Jinja template can use directly.
 def inject_template_helpers():

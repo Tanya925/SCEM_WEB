@@ -15,11 +15,7 @@ from .common import (  # Shared database helpers and column constants.
     values_for_columns,
 )
 
-#
-#     Add any staff-table columns required by Scopus synchronization.
-#
-#     At the moment this only ensures the h-index timestamp column exists.
-#     
+# Add any staff-table columns required by Scopus synchronization.
 def ensure_staff_table_columns() -> None:
     connection = get_db_connection()
     try:
@@ -37,7 +33,6 @@ def ensure_staff_table_columns() -> None:
     finally:
         connection.close()
 
-# Fetch the full staff list for admin pages using the shared staff ordering rules.
 # Fetch the full staff list for admin pages.
 def get_all_staff():
     staff_list = fetch_all(
@@ -49,7 +44,6 @@ def get_all_staff():
     )
     return attach_staff_scopus_metadata(staff_list)
 
-# Fetch one staff record by ID.
 # Fetch a single staff record by ID.
 def get_staff_by_id(staff_id):
     staff = fetch_one("SELECT * FROM staff WHERE id = ?", (staff_id,))
@@ -59,23 +53,19 @@ def get_staff_by_id(staff_id):
     return attach_staff_scopus_metadata([staff])[0]
 
 # Insert a new staff record.
-# Insert a new staff record.
 def create_staff(form_data):
     query = build_insert_sql("staff", STAFF_COLUMNS)
     execute_write(query, values_for_columns(form_data, STAFF_COLUMNS))
 
-# Update an existing staff record.
 # Update the specified staff record.
 def update_staff(staff_id, form_data):
     query = build_update_sql("staff", STAFF_COLUMNS, "id = ?")
     execute_write(query, values_for_columns(form_data, STAFF_COLUMNS) + (staff_id,))
 
-# Delete a specific staff record.
 # Delete the specified staff record.
 def delete_staff(staff_id):
     execute_write("DELETE FROM staff WHERE id = ?", (staff_id,))
 
-# Fetch the staff data actually displayed on the public Staff page.
 # Fetch the staff list shown on the public Staff page.
 def get_staff_directory():
     staff_rows = fetch_all(
@@ -87,7 +77,6 @@ def get_staff_directory():
     )
     return attach_staff_scopus_metadata(staff_rows)
 
-# Group public staff data into the three fixed Staff-page sections.
 # Group public staff into the predefined directory sections.
 def get_staff_directory_sections():
     staff_rows = get_staff_directory()
@@ -109,7 +98,6 @@ def get_staff_directory_sections():
         for section in STAFF_DIRECTORY_SECTIONS
     ]
 
-# Build the filter options used by the Staff page search UI.
 # Prepare search and filter options for the public Staff page.
 def get_staff_filter_options():
     staff_rows = get_staff_directory()
@@ -143,7 +131,6 @@ def get_staff_filter_options():
         "departments": departments,
     }
 
-# Fetch all staff records with a configured Scopus Author ID for crawler updates.
 # Fetch all staff members that have a Scopus Author ID configured.
 def get_staff_scopus_targets():
     staff_rows = fetch_all(
@@ -156,13 +143,7 @@ def get_staff_scopus_targets():
     )
     return [dict(staff) for staff in staff_rows]
 
-# Batch-write the crawler's h-index results back to the staff table.
-#
-#     Batch-write the synchronized h-index values back to the staff table.
-#
-#     Updating in one database session keeps the synchronization logic simpler
-#     and avoids repeatedly opening and closing the SQLite connection.
-#     
+# Batch-write the synchronized h-index values back to the staff table.
 def update_staff_scopus_metrics(rows):
     if not rows:
         return

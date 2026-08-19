@@ -17,8 +17,6 @@ from services.public_service import (
 public_bp = Blueprint("public", __name__)
 
 # ===== Routes =====
-# Switch the public-site language.
-# Only en and th are supported, and the selection is stored in session across pages.
 @public_bp.route("/language/<lang_code>")
 # Switch the public-site language and return to the source page or homepage.
 def change_language(lang_code):
@@ -33,7 +31,6 @@ def change_language(lang_code):
 
     return redirect(url_for("public.index"))
 
-# Homepage: show the unit introduction, activity images, and research highlights.
 @public_bp.route("/")
 # Render the website homepage.
 def index():
@@ -42,7 +39,6 @@ def index():
         **get_homepage_context(),
     )
 
-# Staff page: show grouped people data and filter options.
 @public_bp.route("/staff")
 # Render the public staff page.
 def staff():
@@ -51,26 +47,21 @@ def staff():
         **get_staff_page_context(),
     )
 
-# Research page: show ongoing and finished project lists.
 @public_bp.route("/research")
 # Render the public research listing page.
 def research():
     return render_template("public/research.html", **get_research_page_context())
 
-# Publications page: the page shell loads data from the public API on the client side.
 @public_bp.route("/publications")
 # Render the public publications shell; the client loads the data from the API.
 def publications():
     return render_template("public/publications.html")
 
-# Public publications endpoint: return all publication records in database order.
 @public_bp.route("/api/publications")
 # Return the JSON data used by the public publications page.
 def publication_data():
     return jsonify(get_all_publications())
 
-# Single research project detail page.
-# Only ongoing projects have a public detail page.
 @public_bp.route("/project/<int:project_id>")
 # Render the detail page for one public ongoing project.
 def project_detail(project_id):

@@ -1,14 +1,31 @@
+# Use Compose specification 3.9.
 version: "3.9"
 
+# Define the services that belong to this project.
 services:
+  # web is the main website service that runs the Flask / gunicorn application.
   web:
+    # Build the image from the Dockerfile in the current directory.
     build: .
+
+    # Give the container a fixed name so it is easier to find in docker ps and docker logs.
     container_name: scem_web_EN
+
+    # Map host port 3000 to container port 3000.
+    # The left side is the server port and the right side is the port the website listens to inside the container.
     ports:
       - "3000:3000"
+
+    # Load environment variables from the project-root .env file.
     env_file:
       - .env
+
+    # Mount persistent data that must survive container rebuilds.
+    # scem.db is mapped directly so the SQLite database is preserved.
+    # static/uploads is mapped directly so uploaded files are preserved.
     volumes:
       - ./scem.db:/app/scem.db
       - ./static/uploads:/app/static/uploads
+
+    # Restart the container automatically unless it has been stopped manually.
     restart: unless-stopped

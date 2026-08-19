@@ -113,20 +113,17 @@ STAFF_DIRECTORY_SECTIONS = [
     {"key": "researcher", "title_en": "RESEARCHER", "title_th": "นักวิจัย"},
 ]
 
-# Normalize staff filter text to avoid mismatches caused by case or extra whitespace.
 # Normalize filter values so case and whitespace do not break matching.
 def normalize_staff_filter_value(value):
     cleaned_value = re.sub(r"\s+", " ", str(value or "").strip().lower())
     return cleaned_value
 
-# Create the shared SQLite connection used throughout the project.
 # Create a shared SQLite connection with dict-like row access enabled.
 def get_db_connection():
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
     return connection
 
-# Run a query and return the first row.
 # Execute a query and return the first result row.
 def fetch_one(query, params=()):
     connection = get_db_connection()
@@ -135,7 +132,6 @@ def fetch_one(query, params=()):
     finally:
         connection.close()
 
-# Run a query and return all rows.
 # Execute a query and return all result rows.
 def fetch_all(query, params=()):
     connection = get_db_connection()
@@ -144,7 +140,6 @@ def fetch_all(query, params=()):
     finally:
         connection.close()
 
-# Execute a write query such as insert, update, or delete.
 # Execute insert, update, or delete SQL.
 def execute_write(query, params=()):
     connection = get_db_connection()
@@ -154,25 +149,21 @@ def execute_write(query, params=()):
     finally:
         connection.close()
 
-# Read SQL parameter values from form_data in the order required by a column list.
 # Extract values in column order for SQL parameter binding.
 def values_for_columns(form_data, columns):
     return tuple(form_data.get(column) for column in columns)
 
-# Build an INSERT SQL statement.
 # Build the INSERT SQL for the specified table and columns.
 def build_insert_sql(table_name, columns):
     placeholders = ", ".join("?" for _ in columns)
     column_sql = ", ".join(columns)
     return f"INSERT INTO {table_name} ({column_sql}) VALUES ({placeholders})"
 
-# Build an UPDATE SQL statement.
 # Build the UPDATE SQL for the specified table, columns, and where clause.
 def build_update_sql(table_name, columns, where_clause):
     assignments = ", ".join(f"{column} = ?" for column in columns)
     return f"UPDATE {table_name} SET {assignments} WHERE {where_clause}"
 
-# Build the full Scopus author URL from a staff record.
 # Build the Scopus author page URL from a staff row.
 def build_staff_scopus_url(staff):
     try:
@@ -185,7 +176,6 @@ def build_staff_scopus_url(staff):
 
     return SCOPUS_AUTHOR_URL_TEMPLATE.format(author_id=author_id)
 
-# Enrich staff rows with Scopus and filter metadata used by the frontend.
 # Attach Scopus URLs and filter keys to staff rows.
 def attach_staff_scopus_metadata(staff_rows):
     if not staff_rows:
@@ -206,7 +196,6 @@ def attach_staff_scopus_metadata(staff_rows):
 
     return enriched_staff_rows
 
-# Normalize freeform names from project pages so they can be matched against staff records.
 # Normalize a project-person name into a matching-friendly format.
 def normalize_project_person_name(name):
     cleaned_name = (name or "").strip().lower()
@@ -228,7 +217,6 @@ def normalize_project_person_name(name):
 
     return "".join(normalized_tokens)
 
-# Build a normalized-name to staff lookup used for automatic photo matching.
 # Build a lookup from normalized names to staff photo records.
 def get_staff_photo_lookup():
     staff_rows = fetch_all(
@@ -247,7 +235,6 @@ def get_staff_photo_lookup():
 
     return staff_lookup
 
-# Parse stored JSON for custom project fields into a safe list of dictionaries.
 # Parse custom-field JSON into a safe list of dictionaries.
 def parse_project_custom_fields(raw_text):
     if not raw_text:
@@ -263,7 +250,6 @@ def parse_project_custom_fields(raw_text):
 
     return [field for field in parsed_fields if isinstance(field, dict)]
 
-# Parse the JSON for multi-person photo fields into an ordered filename list.
 # Parse member-photo JSON into a clean list of filenames.
 def parse_project_member_photo_list(raw_text):
     if not raw_text:

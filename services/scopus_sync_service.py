@@ -3,6 +3,7 @@
 import json
 import os
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -12,6 +13,7 @@ from database.staff_db import get_staff_scopus_targets, update_staff_scopus_metr
 AUTHOR_METRICS_URL = "https://api.elsevier.com/analytics/scival/author/metrics"
 
 PUBLICATION_SEARCH_URL = "https://api.elsevier.com/content/search/scopus"
+ABSTRACT_RETRIEVAL_EID_URL_TEMPLATE = "https://api.elsevier.com/content/abstract/eid/{eid}"
 
 DEFAULT_PUBLICATION_START_YEAR = 2020
 
@@ -100,12 +102,104 @@ def fetch_staff_hindex(author_id: str) -> int | None:
 
 # Normalize the Scopus author field into the format stored by the website database.
 def normalize_authors(entry: dict) -> str:
+    authors_container = entry.get("authors") or {}
+    author_items = authors_container.get("author") if isinstance(authors_container, dict) else []
+    if isinstance(author_items, dict):
+        author_items = [author_items]
+
+    parsed_authors = []
+    for author in author_items if isinstance(author_items, list) else []:
+        if not isinstance(author, dict):
+            continue
+
+        indexed_name = str(author.get("authname") or "").strip()
+        if indexed_name:
+            parsed_authors.append(indexed_name)
+            continue
+
+        given_name = str(author.get("given-name") or "").strip()
+        surname = str(author.get("surname") or "").strip()
+        display_name = " ".join(part for part in (given_name, surname) if part)
+        if display_name:
+            parsed_authors.append(display_name)
+
+    if parsed_authors:
+        return "; ".join(parsed_authors)
+
     author_text = str(entry.get("author_names") or "").strip()
     if author_text:
         return author_text.replace("|", ";")
 
     creator = str(entry.get("dc:creator") or "").strip()
     return creator
+
+
+# Walk a nested JSON payload and return the first authors.author container found.
+def find_author_items(payload: object) -> list[dict]:
+    if isinstance(payload, dict):
+        authors_container = payload.get("authors")
+        if isinstance(authors_container, dict):
+            author_items = authors_container.get("author")
+            if isinstance(author_items, dict):
+                return [author_items]
+            if isinstance(author_items, list):
+                return [item for item in author_items if isinstance(item, dict)]
+
+        for value in payload.values():
+            nested_matches = find_author_items(value)
+            if nested_matches:
+                return nested_matches
+
+    if isinstance(payload, list):
+        for item in payload:
+            nested_matches = find_author_items(item)
+            if nested_matches:
+                return nested_matches
+
+    return []
+
+
+# Build a website-ready author string from an Abstract Retrieval payload.
+def extract_authors_from_abstract_payload(payload: dict) -> str:
+    parsed_authors = []
+
+    for author in find_author_items(payload):
+        indexed_name = str(author.get("authname") or author.get("ce:indexed-name") or "").strip()
+        if indexed_name:
+            parsed_authors.append(indexed_name)
+            continue
+
+        given_name = str(
+            author.get("given-name")
+            or author.get("ce:given-name")
+            or author.get("preferred-name", {}).get("given-name")
+            or ""
+        ).strip()
+        surname = str(
+            author.get("surname")
+            or author.get("ce:surname")
+            or author.get("preferred-name", {}).get("surname")
+            or ""
+        ).strip()
+        display_name = " ".join(part for part in (given_name, surname) if part)
+        if display_name:
+            parsed_authors.append(display_name)
+
+    return "; ".join(parsed_authors)
+
+
+# Fetch the complete author list for one publication through the Abstract Retrieval API.
+def fetch_publication_authors(scopus_eid: str) -> str:
+    if not scopus_eid:
+        return ""
+
+    payload = perform_scopus_request(
+        ABSTRACT_RETRIEVAL_EID_URL_TEMPLATE.format(eid=quote(scopus_eid, safe="")),
+        {
+            "view": "META_ABS",
+        },
+    )
+    return extract_authors_from_abstract_payload(payload)
 
 #
 #     Pick the most suitable public-facing link for one publication.
@@ -165,12 +259,14 @@ def build_publication_record(entry: dict) -> dict | None:
 def fetch_staff_publications(author_id: str, start_year: int = DEFAULT_PUBLICATION_START_YEAR) -> list[dict]:
     publications = []
     start = 0
+    author_cache: dict[str, str] = {}
 
     while True:
         payload = perform_scopus_request(
             PUBLICATION_SEARCH_URL,
             {
                 "query": f"au-id({author_id}) AND PUBYEAR > {start_year - 1}",
+                "view": "COMPLETE",
                 "sort": "-coverDate",
                 "count": DEFAULT_PAGE_SIZE,
                 "start": start,
@@ -185,6 +281,13 @@ def fetch_staff_publications(author_id: str, start_year: int = DEFAULT_PUBLICATI
         for entry in entries:
             publication = build_publication_record(entry)
             if publication is not None:
+                scopus_eid = publication["scopus_eid"]
+                if scopus_eid not in author_cache:
+                    author_cache[scopus_eid] = fetch_publication_authors(scopus_eid)
+
+                full_author_text = author_cache.get(scopus_eid, "").strip()
+                if full_author_text:
+                    publication["authors"] = full_author_text
                 publications.append(publication)
 
         total_results_text = str(search_results.get("opensearch:totalResults") or "0").strip()

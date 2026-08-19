@@ -1,87 +1,105 @@
 # SCEM Website Project
 
-This project contains the current SCEM website together with the automation flow that synchronizes Scopus publications and h-index data.
+This project contains the current SCEM public website, its administrator back office, and the Scopus synchronization flow that refreshes staff h-index data and publication records.
 
-The current codebase is mainly split into two parts:
+## 1. Current Project Scope
+
+The codebase currently covers two main areas:
 
 - `Website application`
-  - Contains the public-facing pages and the administrator management interface
+  - Public pages for homepage, staff, research projects, publications, and ongoing-project details
+  - Administrator pages for homepage content, staff records, research projects, and administrator credential updates
 - `Scopus synchronization`
-  - Uses the Scopus / SciVal API together with `Flask-APScheduler` to automatically update staff h-index data and publication records
+  - Automatic synchronization of staff h-index values
+  - Automatic synchronization of publication records from Scopus / SciVal APIs
+
+Features that are no longer part of this project:
+
+- Playwright crawler automation
+- Windows Task Scheduler `.bat` scripts
+- Manual publication review workflows
+- Manual publication management pages
+- Separate staff or researcher login accounts
 
 ---
 
-## 1. Important Files
+## 2. Key Files
 
 - `app.py`
-  - Main entry point for the Flask application
-- `services/scopus_sync_service.py`
-  - Calls the Scopus APIs and synchronizes h-index data plus publication records
-- `services/scopus_scheduler.py`
-  - Starts `Flask-APScheduler` and runs the scheduled Scopus synchronization job
-- `database/`
-  - Database access helpers and startup-time table completion logic
+  - Flask entry point, startup configuration, database readiness checks, and blueprint registration
 - `routes/`
-  - Routes for the public pages, login, admin pages, and publications API
+  - Public routes, authentication routes, and administrator routes
+- `services/public_service.py`
+  - Public-page data assembly
+- `services/admin_service.py`
+  - Administrator form handling, uploads, and save/delete flows
+- `services/auth_service.py`
+  - Administrator login validation and credential updates
+- `services/scopus_sync_service.py`
+  - Scopus / SciVal API calls and synchronization logic
+- `services/scopus_scheduler.py`
+  - APScheduler startup and scheduled sync job wiring
+- `database/`
+  - SQLite helpers, schema-completion helpers, and query/update functions
 - `templates/`
-  - HTML template files
+  - Jinja templates for public pages and administrator pages
 - `static/`
-  - CSS, JavaScript, images, audio, PDF, and uploaded assets
+  - CSS, JavaScript, images, audio, PDFs, and uploaded assets
 - `schema.sql`
-  - Table structure and seed content for initializing an empty database
+  - Base schema and seed content used when initializing an empty database
 - `scem.db`
-  - The SQLite database currently used by the project
+  - SQLite database file used by the application
 - `.env`
-  - Local environment settings such as `SECRET_KEY`, `SCOPUS_API_KEY`, and scheduler settings
+  - Local environment settings such as `SECRET_KEY`, `SCOPUS_API_KEY`, `SCOPUS_SYNC_HOUR`, and `SCOPUS_SYNC_MINUTE`
 - `Dockerfile`
-  - Docker build configuration that starts the site with `gunicorn`
+  - Container build file for the website
 - `docker-compose.yml`
-  - Docker runtime configuration, including ports, `.env`, `scem.db`, and `static/uploads`
+  - Local container runtime configuration
 
 ---
 
-## 2. Environment Setup
+## 3. Environment Setup
 
-### 2.1 Install dependencies
+### 3.1 Install dependencies
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-The main packages used by this project include:
+Main packages used by the project:
 
 - `Flask`
 - `Flask-APScheduler`
 - `python-dotenv`
 - `gunicorn`
 
-### 2.2 Configure `.env`
+### 3.2 Configure `.env`
 
 Create a `.env` file in the project root:
 
 ```env
 SECRET_KEY=replace_with_your_own_secret
 SCOPUS_API_KEY=your_scopus_api_key_here
-SCOPUS_SYNC_INTERVAL_MINUTES=1440
-WEB_CONCURRENCY=1
+SCOPUS_SYNC_HOUR=2
+SCOPUS_SYNC_MINUTE=0
 ```
 
-Field descriptions:
+Environment variables:
 
 - `SECRET_KEY`
-  - Secret used for Flask sessions
+  - Required for Flask session signing
 - `SCOPUS_API_KEY`
-  - API key for Scopus / SciVal requests
-- `SCOPUS_SYNC_INTERVAL_MINUTES`
-  - Interval for the automatic synchronization job, in minutes
-- `WEB_CONCURRENCY`
-  - Number of website workers. Keep this at `1` if the scheduler still runs in the same process as the site
+  - Required for Scopus / SciVal synchronization requests
+- `SCOPUS_SYNC_HOUR`
+  - Daily synchronization hour in `Asia/Bangkok`, from `0` to `23`
+- `SCOPUS_SYNC_MINUTE`
+  - Daily synchronization minute in `Asia/Bangkok`, from `0` to `59`
 
 ---
 
-## 3. Running the Website
+## 4. Running the Site
 
-### 3.1 Run locally
+### 4.1 Run locally
 
 ```powershell
 python app.py
@@ -93,15 +111,9 @@ Default local URL:
 http://127.0.0.1:3000
 ```
 
-Common startup output:
+Typical startup messages include database readiness and scheduler status. The exact wording may vary depending on whether the scheduler starts in the current process.
 
-```text
-Scopus scheduler started.
-SQLite database connected successfully.
-The Scopus scheduler is running in this process.
-```
-
-### 3.2 Run with Docker
+### 4.2 Run with Docker
 
 Build the image:
 
@@ -109,13 +121,27 @@ Build the image:
 docker compose build
 ```
 
-Start the containers:
+Start the container:
 
 ```powershell
 docker compose up -d
 ```
 
-If you changed Python files, templates, or CSS, the full project directory is not mounted into the container, so rebuild before starting again:
+Current container behavior:
+
+- One `web` service is defined
+- Port `3000` is exposed
+- `.env` is loaded into the container
+- `scem.db` is mounted
+- `static/uploads` is mounted
+
+The current container starts the app with:
+
+```text
+gunicorn --bind 0.0.0.0:3000 --workers 1 app:app
+```
+
+If application code, templates, or styles change, rebuild the image because the full project source is not bind-mounted into the container.
 
 ```powershell
 docker compose down
@@ -123,133 +149,128 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-Docker currently preserves:
-
-- `scem.db`
-- `static/uploads`
-
 ---
 
-## 4. Site Structure
+## 5. Site Structure
 
-### 4.1 Public pages
+### 5.1 Public routes
 
 - `/`
-  - Home page
+  - Homepage
 - `/staff`
-  - Team members page
+  - Staff and researcher directory
 - `/research`
-  - Research projects page
+  - Research project listing
 - `/publications`
   - Publications page
 - `/project/<id>`
   - Detail page for one ongoing project
 - `/api/publications`
-  - JSON API used by the publications page
+  - JSON endpoint used by the publications frontend
 
-### 4.2 Admin pages
+### 5.2 Administrator routes
 
-All admin pages currently live under:
+All administrator pages currently live under:
 
 ```text
 /0630_SCEMadmin
 ```
 
-Available admin pages:
+Available administrator pages:
 
 - `/0630_SCEMadmin/login`
   - Administrator login page
 - `/0630_SCEMadmin/dashboard`
-  - Admin dashboard
+  - Main administrator dashboard
 - `/0630_SCEMadmin/general-info`
-  - Home-page text and activity-image management
+  - Homepage text and activity-image management
 - `/0630_SCEMadmin/staff`
-  - Team member management
+  - Staff management
 - `/0630_SCEMadmin/projects`
   - Research project management
 - `/0630_SCEMadmin/passwords`
   - Administrator username and password settings
 
-The current system supports only one administrator account, and the code does not automatically create a default login username or password.
-
 ---
 
-## 5. Administrator Credentials
+## 6. Administrator Account Behavior
 
-If the administrator username or password needs to be changed later, use:
+The current system uses a single-administrator model.
+
+Important notes:
+
+- The code does not automatically create a default login username or password
+- The administrator password page updates the existing account credentials
+- Changing credentials requires the current password
+- The new username must remain unique
+- The new password must be at least 8 characters long
+- The new password must be different from the current password
+
+Use this page to update administrator credentials:
 
 - `/0630_SCEMadmin/passwords`
 
-The update rules are:
-
-- The new username must not duplicate an existing username
-- The current password must be entered before saving
-- The new password must be at least 8 characters long
-- The new password must not match the current password
-
 ---
 
-## 6. Scopus Synchronization Flow
-
-The older browser crawler, manual publication review flow, and manual synchronization page have all been removed.
+## 7. Scopus Synchronization
 
 The current synchronization flow is:
 
-1. Read every staff record that has `scopus_author_id`
-2. Call the Scopus / SciVal APIs
+1. Read each staff record that has a `scopus_author_id`
+2. Request h-index and publication data from Scopus / SciVal APIs
 3. Update `staff.scopus_hindex`
 4. Update `staff.scopus_hindex_updated_at`
 5. Import publications from 2020 onward
-6. Deduplicate by `scopus_eid`
-7. Write the result into the `publications` table
-8. Update `publications.scopus_last_updated_at`
+6. Deduplicate publications by `scopus_eid`
+7. Update or insert rows in `publications`
+8. Refresh `publications.updated_at`
 
-### 6.1 Scheduler behavior
+### 7.1 Scheduler behavior
 
-After the website starts successfully, the scheduler starts automatically.
+After the app starts successfully, the scheduler can start automatically.
 
-The run interval is controlled by `SCOPUS_SYNC_INTERVAL_MINUTES`.
+Notes:
 
-The system still keeps a multi-worker safety guard:
+- The daily run time is controlled by `SCOPUS_SYNC_HOUR` and `SCOPUS_SYNC_MINUTE`
+- The scheduler uses a `cron` trigger, so the sync runs once per day at the configured `Asia/Bangkok` time
+- If `WEB_CONCURRENCY` is not set, the code behaves as if it were `1`
+- When `WEB_CONCURRENCY > 1`, the scheduler does not start by default
+- This prevents duplicate scheduled runs across multiple workers
 
-- When `WEB_CONCURRENCY > 1`
-  - The scheduler does not start by default
-- This prevents multiple workers from running the same synchronization job at the same time
+### 7.2 Publication link selection
 
-### 6.2 Publication link selection
-
-When displaying a publication on the public site, the link is chosen in this order:
+When the site displays a publication link, the current selection order is:
 
 1. DOI URL
 2. Scopus URL
-3. Fallback URL returned by the API
+3. API fallback URL
 
-If the database already has a better non-Scopus link, the synchronization logic tries to preserve it.
+If an older database row already contains a better non-Scopus link, the synchronization logic attempts to preserve that link.
 
 ---
 
-## 7. Database Notes
+## 8. Database Notes
 
-Main tables currently used:
+Main tables currently used by the app:
 
 - `users`
   - Administrator account data
 - `general_info`
-  - Home-page text content
+  - Homepage text content
 - `home_activity_images`
-  - Home-page activity images
+  - Homepage activity images
 - `staff`
-  - Team member records, including Scopus Author ID and h-index
+  - Staff records, including Scopus identifiers and h-index values
 - `research_projects`
   - Research project records
 - `publications`
   - Public publication records synchronized from Scopus
 
-Additional notes:
+Additional behavior:
 
-- `finished` research projects currently appear only in the public list view
-- In practice, `finished` projects still retain their titles and years for public display and search
-- Only `ongoing` projects currently provide a public detail page
+- `finished` projects appear in the public listing page
+- `finished` projects still remain searchable by their saved data
+- Only `ongoing` projects currently have a public detail page
 
 Important Scopus-related columns:
 
@@ -257,33 +278,20 @@ Important Scopus-related columns:
 - `staff.scopus_hindex`
 - `staff.scopus_hindex_updated_at`
 - `publications.scopus_eid`
-- `publications.scopus_last_updated_at`
-
-The current code assumes the database already follows the active schema:
-
-- `users` uses the single-administrator model
-- `publications` uses `scopus_eid` and `scopus_last_updated_at` as the synchronization identity and refresh fields
+- `publications.updated_at`
 
 ---
 
-## 8. Current Maintenance Scope
+## 9. Current Maintenance Responsibilities
 
-Still maintained manually in the admin interface:
+Maintained manually in the administrator interface:
 
-- Home-page content
-- Team member data
-- Research project data
-- Uploaded images and related static assets
+- Homepage content
+- Staff records
+- Research project records
+- Uploaded homepage and project-related assets
 
 Maintained automatically by the system:
 
 - Staff h-index data
 - Publication records from 2020 onward
-
-Features that are no longer part of this project:
-
-- Playwright crawler automation
-- Windows Task Scheduler `.bat` scripts
-- Separate staff / researcher account logins
-- Publication request and review workflows
-- Manual publication management pages
