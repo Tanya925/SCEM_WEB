@@ -112,6 +112,10 @@ def init_scopus_scheduler(flask_app) -> bool:
             timezone=BANGKOK_TIMEZONE,
             replace_existing=True,
             max_instances=1,
+            # Allow short startup or scheduling delays inside Docker/Gunicorn
+            # so a job a few seconds late still runs instead of being skipped.
+            misfire_grace_time=60,
+            coalesce=True,
         )
         print(
             f"Scopus scheduler configured for daily sync at {sync_hour:02d}:{sync_minute:02d} Asia/Bangkok.",
