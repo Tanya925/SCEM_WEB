@@ -124,7 +124,7 @@ def init_scopus_scheduler(flask_app) -> bool:
 
     if should_start_scheduler(flask_app) and not scheduler.running:
         scheduler.start()
-        print("Scopus scheduler started.")
+        # print("Scopus scheduler started.")
         return True
 
     return False
