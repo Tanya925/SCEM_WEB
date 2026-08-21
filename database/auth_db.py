@@ -54,3 +54,69 @@ def update_user_credentials(user_id, username, password_hash):
         connection.commit()
     finally:
         connection.close()
+
+
+# Create or refresh the single administrator account from deployment-time settings.
+def upsert_admin_user(username, password_hash):
+    cleaned_username = (username or "").strip()
+    if not cleaned_username or not password_hash:
+        raise ValueError("Username and password hash are required.")
+
+    ensure_auth_tables()
+
+    connection = get_db_connection()
+    try:
+        existing_user = connection.execute(
+            """
+            SELECT id
+            FROM users
+            WHERE username = ?
+            LIMIT 1
+            """,
+            (cleaned_username,),
+        ).fetchone()
+
+        if existing_user is not None:
+            connection.execute(
+                """
+                UPDATE users
+                SET password_hash = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (password_hash, existing_user["id"]),
+            )
+            connection.commit()
+            return existing_user["id"]
+
+        first_user = connection.execute(
+            """
+            SELECT id
+            FROM users
+            ORDER BY id ASC
+            LIMIT 1
+            """
+        ).fetchone()
+
+        if first_user is not None:
+            connection.execute(
+                """
+                UPDATE users
+                SET username = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                """,
+                (cleaned_username, password_hash, first_user["id"]),
+            )
+            connection.commit()
+            return first_user["id"]
+
+        cursor = connection.execute(
+            """
+            INSERT INTO users (username, password_hash)
+            VALUES (?, ?)
+            """,
+            (cleaned_username, password_hash),
+        )
+        connection.commit()
+        return cursor.lastrowid
+    finally:
+        connection.close()

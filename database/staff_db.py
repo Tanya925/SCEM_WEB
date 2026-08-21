@@ -15,24 +15,6 @@ from .common import (  # Shared database helpers and column constants.
     values_for_columns,
 )
 
-# Add any staff-table columns required by Scopus synchronization.
-def ensure_staff_table_columns() -> None:
-    connection = get_db_connection()
-    try:
-        existing_columns = {
-            row["name"]
-            for row in connection.execute("PRAGMA table_info(staff)").fetchall()
-        }
-
-        if "scopus_hindex_updated_at" not in existing_columns:
-            connection.execute(
-                "ALTER TABLE staff ADD COLUMN scopus_hindex_updated_at TEXT"
-            )
-
-        connection.commit()
-    finally:
-        connection.close()
-
 # Fetch the full staff list for admin pages.
 def get_all_staff():
     staff_list = fetch_all(
@@ -148,7 +130,6 @@ def update_staff_scopus_metrics(rows):
     if not rows:
         return
 
-    ensure_staff_table_columns()
     connection = get_db_connection()
     try:
         for row in rows:

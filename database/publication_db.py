@@ -17,133 +17,9 @@ PUBLICATION_FORM_COLUMNS = (
     "pdf_url",
 )
 
-# ===== Table Initialization =====
-# Run these helpers before table operations so the app does not break when the table is missing.
-# Create the publications table if it does not exist.
-def ensure_publications_table() -> None:
-    connection = get_db_connection()
-    try:
-        connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS publications (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source_order INTEGER NOT NULL DEFAULT 0,
-                title TEXT NOT NULL,
-                authors TEXT NOT NULL DEFAULT '',
-                journal TEXT NOT NULL DEFAULT '',
-                publication_year INTEGER,
-                volume TEXT NOT NULL DEFAULT '',
-                issue TEXT NOT NULL DEFAULT '',
-                article_number TEXT NOT NULL DEFAULT '',
-                page TEXT NOT NULL DEFAULT '',
-                pdf_url TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-        ensure_publications_table_columns(connection)
-        connection.commit()
-    finally:
-        connection.close()
-
-
-# Add newer publication columns required by the Scopus sync flow.
-def ensure_publications_table_columns(connection) -> None:
-    existing_columns = {
-        row["name"]
-        for row in connection.execute("PRAGMA table_info(publications)").fetchall()
-    }
-
-    if "scopus_eid" not in existing_columns:
-        connection.execute(
-            "ALTER TABLE publications ADD COLUMN scopus_eid TEXT NOT NULL DEFAULT ''"
-        )
-
-    connection.execute(
-        """
-        CREATE INDEX IF NOT EXISTS idx_publications_scopus_eid
-        ON publications(scopus_eid)
-        """
-    )
-
-    if "scopus_last_updated_at" in existing_columns:
-        rebuild_publications_table_without_scopus_timestamp(connection)
-
-
-# Rebuild the publications table to remove the old scopus_last_updated_at column.
-def rebuild_publications_table_without_scopus_timestamp(connection) -> None:
-    connection.execute("DROP TABLE IF EXISTS publications__new")
-    connection.execute(
-        """
-        CREATE TABLE publications__new (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source_order INTEGER NOT NULL DEFAULT 0,
-            title TEXT NOT NULL,
-            authors TEXT NOT NULL DEFAULT '',
-            journal TEXT NOT NULL DEFAULT '',
-            publication_year INTEGER,
-            volume TEXT NOT NULL DEFAULT '',
-            issue TEXT NOT NULL DEFAULT '',
-            article_number TEXT NOT NULL DEFAULT '',
-            page TEXT NOT NULL DEFAULT '',
-            pdf_url TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            scopus_eid TEXT NOT NULL DEFAULT ''
-        )
-        """
-    )
-    connection.execute(
-        """
-        INSERT INTO publications__new (
-            id,
-            source_order,
-            title,
-            authors,
-            journal,
-            publication_year,
-            volume,
-            issue,
-            article_number,
-            page,
-            pdf_url,
-            created_at,
-            updated_at,
-            scopus_eid
-        )
-        SELECT
-            id,
-            source_order,
-            title,
-            authors,
-            journal,
-            publication_year,
-            volume,
-            issue,
-            article_number,
-            page,
-            pdf_url,
-            created_at,
-            updated_at,
-            COALESCE(scopus_eid, '')
-        FROM publications
-        """
-    )
-    connection.execute("DROP TABLE publications")
-    connection.execute("ALTER TABLE publications__new RENAME TO publications")
-    connection.execute(
-        """
-        CREATE INDEX IF NOT EXISTS idx_publications_scopus_eid
-        ON publications(scopus_eid)
-        """
-    )
-
-
 # ===== Shared Queries for the Public Site =====
 # Fetch the complete public publication list.
 def get_all_publications():
-    ensure_publications_table()
     rows = fetch_all(
         """
         SELECT
@@ -179,7 +55,6 @@ def get_all_publications():
 #     - the database does not retain stale synchronized publications
 #     
 def sync_scopus_publications(publications):
-    ensure_publications_table()
     connection = get_db_connection()
     inserted_count = 0
     updated_count = 0

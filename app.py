@@ -18,17 +18,14 @@ from database.common import (
     parse_project_member_photo_list,
 )
 from database.auth_db import ensure_auth_tables
-from database.publication_db import ensure_publications_table
 from routes.admin_routes import admin_bp
 from routes.auth_routes import auth_bp
 from routes.public_routes import public_bp
 from services.scopus_scheduler import init_scopus_scheduler
-from database.staff_db import ensure_staff_table_columns
 
 # ===== Constants =====
 # Project-level constants shared by startup logic and template helpers.
 BASE_DIR = Path(__file__).resolve().parent  # Absolute path to the project root.
-SCHEMA_PATH = BASE_DIR / "schema.sql"  # Path to the schema and seed SQL file.
 LANGUAGE_FALLBACK = {"en": "th", "th": "en"}  # Fallback language when the preferred field is empty.
 OVERVIEW_IMAGE_MAP = {  # Mapping between overview titles and the fixed homepage images.
     "logistics/ supply chain strategy development": {
@@ -298,9 +295,14 @@ def inject_template_helpers():
     }
 
 # ===== Database Startup Checks =====
-# Test whether SQLite can be opened before the app starts.
-# Check whether the current database file can be opened successfully.
+# Test whether the seeded SQLite database can be opened before the app starts.
 def test_db_connection():
+    if not DATABASE_PATH.exists():
+        print(
+            "Database file is missing. Run init_db/seed.py before starting the app."
+        )
+        return False
+
     try:
         connection = get_db_connection()
         connection.close()
@@ -309,11 +311,8 @@ def test_db_connection():
         print(f"Database connection failed: {error}")
         return False
 
-# Return whether the database is missing required application tables.
-def is_database_empty():
-    if not DATABASE_PATH.exists():
-        return True
-
+# Return whether the seeded database still contains the required application tables.
+def has_required_database_tables():
     connection = get_db_connection()
     try:
         existing_tables = {
@@ -332,37 +331,25 @@ def is_database_empty():
     required_tables = {
         "general_info",
         "home_activity_images",
+        "publications",
         "research_projects",
         "staff",
+        "users",
     }
 
-    return not required_tables.issubset(existing_tables)
+    return required_tables.issubset(existing_tables)
 
-# Initialize an empty database by applying schema.sql.
-def initialize_database_if_empty():
-    if not is_database_empty():
-        return False
-
-    schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
-    connection = get_db_connection()
-    try:
-        connection.executescript(schema_sql)
-        connection.commit()
-    finally:
-        connection.close()
-
-    return True
-
-# Verify that required tables and seed data exist before startup.
+# Verify that required tables exist before startup.
 def ensure_database_ready():
     if not test_db_connection():
         return False
 
-    if initialize_database_if_empty():
-        print("Empty database detected. Initialization completed.")
+    if not has_required_database_tables():
+        print(
+            "Database is missing required tables. Run init_db/seed.py before starting the app."
+        )
+        return False
 
-    ensure_publications_table()
-    ensure_staff_table_columns()
     ensure_auth_tables()
 
     return True
@@ -386,9 +373,11 @@ if __name__ == "__main__":
             print("In-process Scopus scheduler is running.")
         else:
             print("Scopus scheduler is not running in this process.")
+        app.run(port=3000, debug=False)
     else:
-        print("SQLite database connection failed. Please verify that scem.db exists.")
-
-    app.run(port=3000, debug=False)
+        print(
+            "SQLite database is not ready. Please run init_db/seed.py and then start the app again."
+        )
+        raise SystemExit(1)
 
 

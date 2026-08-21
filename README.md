@@ -47,10 +47,12 @@ Features that are no longer part of this project:
   - CSS, JavaScript, images, audio, PDFs, and uploaded assets
 - `schema.sql`
   - Base schema and seed content used when initializing an empty database
+- `init_db/seed.py`
+  - One-time and repeatable database initialization script for deployment
 - `scem.db`
   - SQLite database file used by the application
 - `.env`
-  - Local environment settings such as `SECRET_KEY`, `SCOPUS_API_KEY`, `SCOPUS_SYNC_HOUR`, and `SCOPUS_SYNC_MINUTE`
+  - Local environment settings such as `SECRET_KEY`, `ADMIN_USER`, `ADMIN_PASSWORD`, `SCOPUS_API_KEY`, `SCOPUS_SYNC_HOUR`, and `SCOPUS_SYNC_MINUTE`
 - `Dockerfile`
   - Container build file for the website
 - `docker-compose.yml`
@@ -79,6 +81,8 @@ Create a `.env` file in the project root:
 
 ```env
 SECRET_KEY=replace_with_your_own_secret
+ADMIN_USER=admin
+ADMIN_PASSWORD=change_this_admin_password
 SCOPUS_API_KEY=your_scopus_api_key_here
 SCOPUS_SYNC_HOUR=2
 SCOPUS_SYNC_MINUTE=0
@@ -88,6 +92,10 @@ Environment variables:
 
 - `SECRET_KEY`
   - Required for Flask session signing
+- `ADMIN_USER`
+  - Deployment-time administrator username used by `init_db/seed.py`
+- `ADMIN_PASSWORD`
+  - Deployment-time administrator password used by `init_db/seed.py`
 - `SCOPUS_API_KEY`
   - Required for Scopus / SciVal synchronization requests
 - `SCOPUS_SYNC_HOUR`
@@ -99,7 +107,23 @@ Environment variables:
 
 ## 4. Running the Site
 
-### 4.1 Run locally
+### 4.1 Initialize the database first
+
+Before starting the website, run the seed script once:
+
+```powershell
+python init_db/seed.py
+```
+
+Current seed behavior:
+
+- If `scem.db` does not exist, it creates the database from `schema.sql`
+- It creates or updates the single administrator account from `.env`
+- It attempts one Scopus synchronization pass
+
+If you change `ADMIN_USER` or `ADMIN_PASSWORD` in `.env`, run `init_db/seed.py` again so the database account matches the new values.
+
+### 4.2 Run locally
 
 ```powershell
 python app.py
@@ -113,7 +137,12 @@ http://127.0.0.1:3000
 
 Typical startup messages include database readiness and scheduler status. The exact wording may vary depending on whether the scheduler starts in the current process.
 
-### 4.2 Run with Docker
+Important note:
+
+- `app.py` does not create an empty database automatically
+- If `scem.db` is missing or incomplete, start-up will stop and ask you to run `init_db/seed.py`
+
+### 4.3 Run with Docker
 
 Build the image:
 
@@ -199,12 +228,20 @@ The current system uses a single-administrator model.
 
 Important notes:
 
-- The code does not automatically create a default login username or password
+- `init_db/seed.py` creates or updates the administrator account from `.env`
+- `ADMIN_USER` and `ADMIN_PASSWORD` therefore act as the deployment-time source of truth
 - The administrator password page updates the existing account credentials
 - Changing credentials requires the current password
 - The new username must remain unique
 - The new password must be at least 8 characters long
 - The new password must be different from the current password
+
+Recommended usage:
+
+- Set the initial administrator username and password in `.env`
+- Run `init_db/seed.py`
+- Log in through `/0630_SCEMadmin/login`
+- After that, credentials can also be changed from `/0630_SCEMadmin/passwords`
 
 Use this page to update administrator credentials:
 

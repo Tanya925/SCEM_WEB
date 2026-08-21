@@ -430,6 +430,12 @@
 }
 
 @media (max-width: 640px) {
+    .site-footer-admin-entry {
+        right: 12px;
+        bottom: 12px;
+        font-size: 0.9rem;
+    }
+
     .publication-page-hero {
         padding: 36px 0 30px;
     }

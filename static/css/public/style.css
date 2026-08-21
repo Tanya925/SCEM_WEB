@@ -1025,6 +1025,30 @@ a {
     letter-spacing: 0.02em;
 }
 
+.site-footer-admin-entry {
+    position: absolute;
+    right: 18px;
+    bottom: 8px;
+    z-index: 40;
+    display: inline-block;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #412843;
+    text-decoration: none;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: color 180ms ease, opacity 180ms ease;
+}
+
+.site-footer-admin-entry:hover,
+.site-footer-admin-entry:focus-visible {
+    color: #4d304f;
+    opacity: 0.88;
+    outline: none;
+}
+
 .hero-logo-panel {
     display: flex;
     flex-direction: column;
